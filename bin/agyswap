@@ -814,12 +814,24 @@ def cmd_switch(args):
         print(red(f"✗ Failed to update Keychain: {e}"))
         sys.exit(1)
 
-    cfg["active_slot"] = slot_num
-    selected["last_used_at"] = datetime.now(timezone.utc).isoformat()
-    StorageManager.save_config(cfg)
-
     print(green(f"✓ Switched Antigravity (agy) profile to #{slot_num} ({email})."))
-    warn_running_instances()
+
+    if getattr(args, "resume", False):
+        agy_bin = shutil.which("agy") or "/opt/homebrew/bin/agy"
+        print(cyan(f"🚀 Resuming last session with #{slot_num} ({email}) via 'agy -c'...\n"))
+        try:
+            os.execvp(agy_bin, [agy_bin, "-c"])
+        except Exception as e:
+            print(red(f"✗ Failed to launch agy: {e}"))
+    elif getattr(args, "new_session", False):
+        agy_bin = shutil.which("agy") or "/opt/homebrew/bin/agy"
+        print(cyan(f"🚀 Launching new session with #{slot_num} ({email}) via 'agy'...\n"))
+        try:
+            os.execvp(agy_bin, [agy_bin])
+        except Exception as e:
+            print(red(f"✗ Failed to launch agy: {e}"))
+    else:
+        warn_running_instances()
 
 def cmd_remove(args):
     """Deletes target slot."""
@@ -1586,10 +1598,13 @@ def main():
         cmd_list(argparse.Namespace(json=False))
         return
 
-    if len(sys.argv) == 2 and not sys.argv[1].startswith("-"):
+    if len(sys.argv) in (2, 3, 4) and not sys.argv[1].startswith("-"):
         subcmds = ["list", "ls", "status", "st", "add", "switch", "sw", "remove", "rm", "rename", "whoami", "sync", "rotate", "health", "audit", "export", "import", "viz", "completion"]
         if sys.argv[1] not in subcmds:
-            cmd_switch(argparse.Namespace(target=sys.argv[1], dry_run=False, force=False))
+            resume = ("-r" in sys.argv[2:] or "--resume" in sys.argv[2:])
+            new_s = ("-n" in sys.argv[2:] or "--new" in sys.argv[2:])
+            force = ("--force" in sys.argv[2:] or "-f" in sys.argv[2:])
+            cmd_switch(argparse.Namespace(target=sys.argv[1], dry_run=False, force=force, resume=resume, new_session=new_s))
             return
 
     if len(sys.argv) == 2 and sys.argv[1] in ["--status", "-s"]:
@@ -1602,13 +1617,12 @@ def main():
         epilog="""Examples:
   agyswap                    List all accounts
   agyswap 2                  Quick switch to slot #2
-  agyswap switch work        Switch to account with alias 'work'
-  agyswap rotate 1           Trigger token refresh for slot #1
+  agyswap 2 -r               Switch to slot #2 and auto-resume session (agy -c)
+  agyswap switch work -r     Switch to 'work' and resume active conversation
+  agyswap rotate --all       Refresh OAuth tokens for all slots
   agyswap audit              Audit file permissions & security
   agyswap health             Token expiry dashboard
   agyswap sync --all         Check sync status of all slots
-  agyswap export backup.json Export slot metadata (tokens excluded)
-  agyswap import backup.json Restore slot metadata
 """,
         formatter_class=argparse.RawDescriptionHelpFormatter
     )
@@ -1627,6 +1641,8 @@ def main():
 
     p_switch = subparsers.add_parser("switch", aliases=["sw"], help="Switch active account profile")
     p_switch.add_argument("target", help="Slot number, email, or alias")
+    p_switch.add_argument("-r", "--resume", action="store_true", help="Auto-resume previous session with switched account via 'agy -c'")
+    p_switch.add_argument("-n", "--new", action="store_true", dest="new_session", help="Auto-launch fresh session with switched account via 'agy'")
     p_switch.add_argument("--force", action="store_true", help="Force switch even if token is expired")
     p_switch.add_argument("--dry-run", action="store_true", dest="dry_run", help="Preview without making changes")
 
