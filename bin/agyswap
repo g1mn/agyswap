@@ -26,6 +26,8 @@ Usage:
   agyswap --version            Show version
 """
 
+from __future__ import annotations
+
 import sys
 import os
 import re
