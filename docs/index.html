@@ -106,27 +106,27 @@
     <button id="themeBtn" style="padding:6px 12px;background:var(--surface);border:1px solid var(--line);border-radius:6px;cursor:pointer;color:var(--ink);font-family:var(--mono);font-size:12px">🌓 Theme</button>
   </header>
 
-  <!-- Live Stats Tiles -->
+  <!-- Core Feature Highlights -->
   <section class="tiles">
     <div class="tile">
-      <div class="k">Active Slot</div>
-      <div class="v" id="tActive">#1</div>
-      <div class="n" id="tActiveEmail">personal@example.com</div>
+      <div class="k">⚡ Switching Speed</div>
+      <div class="v" style="color:var(--accent)">~0.1s</div>
+      <div class="n">Instant profile swap</div>
     </div>
     <div class="tile">
-      <div class="k">Registered Slots</div>
-      <div class="v" id="tSlotsCount">3 Slots</div>
-      <div class="n">~/.agy-swap/slots/ [0600]</div>
+      <div class="k">🔐 Native Security</div>
+      <div class="v" style="color:var(--ok)">C API Binding</div>
+      <div class="n">CWE-214 argv leak safe</div>
     </div>
     <div class="tile">
-      <div class="k">Keychain Status</div>
-      <div class="v" style="color:var(--ok)">Connected</div>
-      <div class="n">Native Security.framework C API</div>
+      <div class="k">📦 Dependencies</div>
+      <div class="v">0 External</div>
+      <div class="n">Pure Python 3 standard library</div>
     </div>
     <div class="tile">
-      <div class="k">Last Viz Sync</div>
-      <div class="v" id="tSnapshot">2026-08-23 10:00 UTC</div>
-      <div class="n">agyswap viz --open</div>
+      <div class="k">🔒 File Isolation</div>
+      <div class="v">0600 / 0700</div>
+      <div class="n">Atomic POSIX fcntl lock</div>
     </div>
   </section>
 
@@ -169,7 +169,8 @@
 
       <!-- Section B: Slot Inventory Table -->
       <section class="card" id="sec-slots">
-        <h2>B · Slot Inventory (Live Status) <span class="badge" id="slotsBadge">3 Loaded</span></h2>
+        <h2>B · Account Slot Inventory <span class="badge" id="slotsBadge">3 Profiles</span></h2>
+        <p style="color:var(--muted);font-size:13px;margin-top:0">Interactive preview of registered profile slots. Run <code style="font-family:var(--mono);color:var(--accent)">agyswap viz --open</code> locally on macOS to view your real accounts.</p>
         <table id="slotsTable">
           <thead>
             <tr>
@@ -352,17 +353,17 @@ const SLOTS = [
 
 /* Render Slots Table */
 function renderDashboard() {
-  document.getElementById('tSnapshot').textContent = SNAPSHOT;
-  document.getElementById('tActive').textContent = '#' + (ACTIVE_SLOT || '-');
-  document.getElementById('tSlotsCount').textContent = SLOTS.length + ' Slots';
+  var badge = document.getElementById('slotsBadge');
+  if (badge) badge.textContent = SLOTS.length + ' Profiles';
 
   var tbody = document.getElementById('slotsTbody');
+  if (!tbody) return;
   tbody.innerHTML = '';
   SLOTS.forEach(function(s) {
     var tr = document.createElement('tr');
     var aliasTag = s.alias ? ' <span class="mono" style="color:var(--accent)">[' + s.alias + ']</span>' : '';
     var activeTag = (s.slot === ACTIVE_SLOT) ? ' <span class="badge">ACTIVE</span>' : '';
-    var statusClass = s.is_expired ? 'badge-crit' : (s.expiry_human.includes('Soon') ? 'badge-warn' : 'badge');
+    var statusClass = s.is_expired ? 'badge-crit' : (s.expiry_human && s.expiry_human.includes('Soon') ? 'badge-warn' : 'badge');
     var statusText = s.is_expired ? 'Expired' : 'Valid';
 
     tr.innerHTML = '<td><b>#' + s.slot + '</b>' + activeTag + '</td>' +
@@ -371,10 +372,6 @@ function renderDashboard() {
                    '<td class="mono">' + s.expiry_human + '</td>' +
                    '<td class="mono" style="color:var(--faint)">' + (s.auth_method || 'consumer') + '</td>';
     tbody.appendChild(tr);
-
-    if (s.slot === ACTIVE_SLOT) {
-      document.getElementById('tActiveEmail').textContent = s.email + (s.alias ? ' [' + s.alias + ']' : '');
-    }
   });
 }
 renderDashboard();
