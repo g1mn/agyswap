@@ -58,7 +58,9 @@ For a live, interactive visualization of account slots, switching sequences, and
 
 ### Option 1: Homebrew (Recommended on macOS)
 ```bash
-brew install g1mn/agyswap/agyswap
+brew install g1mn/tap/agyswap
+# or
+brew tap g1mn/tap && brew install agyswap
 ```
 *Shell completions for `zsh`, `bash`, and `fish` are automatically configured by Homebrew.*
 
