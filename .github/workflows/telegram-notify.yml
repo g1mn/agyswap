@@ -6,12 +6,23 @@ on:
   fork:
   issues:
     types: [opened, closed, reopened, labeled]
+  issue_comment:
+    types: [created]
   pull_request:
     types: [opened, closed, reopened]
   release:
     types: [published]
+  workflow_run:
+    workflows: ["CI & Syntax Check", "Deploy GitHub Pages"]
+    types: [completed]
+  schedule:
+    - cron: '0 0 * * 1'   # Every Monday at 00:00 UTC (09:00 KST)
   workflow_dispatch:
     inputs:
+      action_type:
+        description: 'Action to test (test, weekly_report)'
+        required: false
+        default: 'test'
       test_message:
         description: 'Test notification message'
         required: false
@@ -19,58 +30,180 @@ on:
 
 jobs:
   notify:
+    # If triggered by workflow_run, only run if conclusion is 'failure'
+    if: |
+      github.event_name != 'workflow_run' ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'failure')
     runs-on: ubuntu-latest
     steps:
-      - name: Send Notification to Telegram
+      - name: Process Event and Send Telegram Message
         env:
           TG_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TG_CHAT: ${{ secrets.TELEGRAM_CHAT_ID }}
+          GITHUB_EVENT_PATH: ${{ github.event_path }}
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          GITHUB_ACTOR: ${{ github.actor }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          INPUT_ACTION_TYPE: ${{ github.event.inputs.action_type }}
+          INPUT_TEST_MESSAGE: ${{ github.event.inputs.test_message }}
         run: |
-          EVENT_NAME="${{ github.event_name }}"
-          ACTOR="${{ github.actor }}"
-          REPO="${{ github.repository }}"
-          REPO_URL="https://github.com/${REPO}"
-          SENDER_URL="https://github.com/${ACTOR}"
+          python3 - << 'EOF'
+          import os
+          import json
+          import urllib.request
+          import urllib.parse
+          import html
 
-          MSG=""
+          tg_token = os.environ.get("TG_TOKEN", "").strip()
+          tg_chat = os.environ.get("TG_CHAT", "").strip()
+          event_name = os.environ.get("GITHUB_EVENT_NAME", "")
+          actor = os.environ.get("GITHUB_ACTOR", "")
+          repo = os.environ.get("GITHUB_REPOSITORY", "")
+          event_path = os.environ.get("GITHUB_EVENT_PATH", "")
+          action_type = os.environ.get("INPUT_ACTION_TYPE", "")
+          test_msg = os.environ.get("INPUT_TEST_MESSAGE", "")
 
-          if [ "$EVENT_NAME" = "watch" ]; then
-            MSG="⭐ <b>New Star on agyswap!</b>%0A%0A👤 <b>User:</b> <a href='${SENDER_URL}'>@${ACTOR}</a>%0A📦 <b>Repo:</b> <a href='${REPO_URL}'>${REPO}</a>"
-          elif [ "$EVENT_NAME" = "fork" ]; then
-            FORK_URL="${{ github.event.forkee.html_url }}"
-            MSG="🍴 <b>New Fork Created!</b>%0A%0A👤 <b>User:</b> <a href='${SENDER_URL}'>@${ACTOR}</a>%0A📦 <b>Fork:</b> <a href='${FORK_URL}'>${{ github.event.forkee.full_name }}</a>"
-          elif [ "$EVENT_NAME" = "issues" ]; then
-            ACTION="${{ github.event.action }}"
-            ISSUE_NUM="${{ github.event.issue.number }}"
-            ISSUE_TITLE="${{ github.event.issue.title }}"
-            ISSUE_URL="${{ github.event.issue.html_url }}"
-            MSG="🚨 <b>Issue [${ACTION^^}]: #${ISSUE_NUM}</b>%0A%0A📌 <b>Title:</b> <a href='${ISSUE_URL}'>${ISSUE_TITLE}</a>%0A👤 <b>Author:</b> <a href='${SENDER_URL}'>@${ACTOR}</a>%0A📦 <b>Repo:</b> <a href='${REPO_URL}'>${REPO}</a>"
-          elif [ "$EVENT_NAME" = "pull_request" ]; then
-            ACTION="${{ github.event.action }}"
-            PR_NUM="${{ github.event.pull_request.number }}"
-            PR_TITLE="${{ github.event.pull_request.title }}"
-            PR_URL="${{ github.event.pull_request.html_url }}"
-            IS_MERGED="${{ github.event.pull_request.merged }}"
-            
-            if [ "$ACTION" = "closed" ] && [ "$IS_MERGED" = "true" ]; then
-              ACTION="MERGED 🎉"
-            fi
-            
-            MSG="🔀 <b>Pull Request [${ACTION}]: #${PR_NUM}</b>%0A%0A📌 <b>Title:</b> <a href='${PR_URL}'>${PR_TITLE}</a>%0A👤 <b>Author:</b> <a href='${SENDER_URL}'>@${ACTOR}</a>%0A📦 <b>Repo:</b> <a href='${REPO_URL}'>${REPO}</a>"
-          elif [ "$EVENT_NAME" = "release" ]; then
-            TAG="${{ github.event.release.tag_name }}"
-            REL_NAME="${{ github.event.release.name }}"
-            REL_URL="${{ github.event.release.html_url }}"
-            MSG="🚀 <b>New Release Published!</b>%0A%0A🏷️ <b>Tag:</b> <a href='${REL_URL}'>${TAG} (${REL_NAME})</a>%0A👤 <b>By:</b> <a href='${SENDER_URL}'>@${ACTOR}</a>%0A📦 <b>Repo:</b> <a href='${REPO_URL}'>${REPO}</a>"
-          elif [ "$EVENT_NAME" = "workflow_dispatch" ]; then
-            CUSTOM_MSG="${{ github.event.inputs.test_message }}"
-            MSG="🔔 <b>agyswap Telegram Test</b>%0A%0A💬 ${CUSTOM_MSG}%0A👤 Triggered by: @${ACTOR}"
-          else
-            MSG="📢 <b>agyswap Event:</b> ${EVENT_NAME}%0A👤 By: @${ACTOR}%0A📦 <a href='${REPO_URL}'>${REPO}</a>"
-          fi
+          if not tg_token or not tg_chat:
+              print("Missing TG_TOKEN or TG_CHAT secrets. Skipping.")
+              exit(0)
 
-          curl -sS -X POST "https://api.telegram.org/bot${TG_TOKEN}/sendMessage" \
-            -d "chat_id=${TG_CHAT}" \
-            -d "parse_mode=HTML" \
-            -d "disable_web_page_preview=true" \
-            -d "text=${MSG}"
+          event_data = {}
+          if event_path and os.path.exists(event_path):
+              try:
+                  with open(event_path, "r", encoding="utf-8") as f:
+                      event_data = json.load(f)
+              except Exception as e:
+                  print(f"Error reading event json: {e}")
+
+          repo_url = f"https://github.com/{repo}"
+          actor_url = f"https://github.com/{actor}"
+          actor_link = f"<a href='{actor_url}'>@{actor}</a>"
+          repo_link = f"<a href='{repo_url}'>{repo}</a>"
+
+          msg = ""
+
+          # 1. Star Event
+          if event_name == "watch":
+              msg = f"⭐ <b>New Star on agyswap!</b>\n\n👤 <b>User:</b> {actor_link}\n📦 <b>Repo:</b> {repo_link}"
+
+          # 2. Fork Event
+          elif event_name == "fork":
+              forkee = event_data.get("forkee", {})
+              fork_full_name = html.escape(forkee.get("full_name", "fork"))
+              fork_url = forkee.get("html_url", repo_url)
+              msg = f"🍴 <b>New Fork Created!</b>\n\n👤 <b>User:</b> {actor_link}\n📦 <b>Fork:</b> <a href='{fork_url}'>{fork_full_name}</a>"
+
+          # 3. Issue Event
+          elif event_name == "issues":
+              action = event_data.get("action", "").upper()
+              issue = event_data.get("issue", {})
+              num = issue.get("number", "")
+              title = html.escape(issue.get("title", ""))
+              url = issue.get("html_url", repo_url)
+              msg = f"🚨 <b>Issue [{action}]: #{num}</b>\n\n📌 <b>Title:</b> <a href='{url}'>{title}</a>\n👤 <b>Author:</b> {actor_link}\n📦 <b>Repo:</b> {repo_link}"
+
+          # 4. Issue & PR Comments
+          elif event_name == "issue_comment":
+              action = event_data.get("action", "")
+              if action == "created":
+                  issue = event_data.get("issue", {})
+                  is_pr = "pull_request" in issue
+                  kind = "Pull Request" if is_pr else "Issue"
+                  num = issue.get("number", "")
+                  title = html.escape(issue.get("title", ""))
+                  comment = event_data.get("comment", {})
+                  comment_url = comment.get("html_url", repo_url)
+                  body = comment.get("body", "")
+                  body_preview = html.escape((body[:140] + "...") if len(body) > 140 else body)
+
+                  msg = f"💬 <b>New Comment on {kind} #{num}</b>\n\n📌 <b>Subject:</b> <a href='{comment_url}'>{title}</a>\n👤 <b>Author:</b> {actor_link}\n\n<i>\"{body_preview}\"</i>"
+
+          # 5. Pull Request Event
+          elif event_name == "pull_request":
+              action = event_data.get("action", "")
+              pr = event_data.get("pull_request", {})
+              num = pr.get("number", "")
+              title = html.escape(pr.get("title", ""))
+              url = pr.get("html_url", repo_url)
+              is_merged = pr.get("merged", False)
+
+              if action == "closed" and is_merged:
+                  status_str = "MERGED 🎉"
+              elif action == "closed":
+                  status_str = "CLOSED ❌"
+              else:
+                  status_str = action.upper()
+
+              msg = f"🔀 <b>Pull Request [{status_str}]: #{num}</b>\n\n📌 <b>Title:</b> <a href='{url}'>{title}</a>\n👤 <b>Author:</b> {actor_link}\n📦 <b>Repo:</b> {repo_link}"
+
+          # 6. Release Event
+          elif event_name == "release":
+              rel = event_data.get("release", {})
+              tag = html.escape(rel.get("tag_name", ""))
+              name = html.escape(rel.get("name", tag))
+              url = rel.get("html_url", repo_url)
+              msg = f"🚀 <b>New Release Published!</b>\n\n🏷️ <b>Version:</b> <a href='{url}'>{tag} ({name})</a>\n👤 <b>By:</b> {actor_link}\n📦 <b>Repo:</b> {repo_link}"
+
+          # 7. CI / Build Failure Event
+          elif event_name == "workflow_run":
+              wf_run = event_data.get("workflow_run", {})
+              conclusion = wf_run.get("conclusion", "")
+              if conclusion == "failure":
+                  wf_name = html.escape(wf_run.get("name", "Workflow"))
+                  branch = html.escape(wf_run.get("head_branch", "main"))
+                  commit_msg = html.escape(wf_run.get("head_commit", {}).get("message", "").split("\n")[0])
+                  run_url = wf_run.get("html_url", repo_url)
+                  msg = f"❌ <b>CI Build Failed!</b>\n\n⚙️ <b>Workflow:</b> <a href='{run_url}'>{wf_name}</a>\n🌿 <b>Branch:</b> <code>{branch}</code>\n💬 <b>Commit:</b> {commit_msg}\n👤 <b>By:</b> {actor_link}"
+
+          # 8. Weekly Digest / Stats Report
+          elif event_name == "schedule" or (event_name == "workflow_dispatch" and action_type == "weekly_report"):
+              try:
+                  req = urllib.request.Request(f"https://api.github.com/repos/{repo}", headers={"User-Agent": "agyswap-bot"})
+                  with urllib.request.urlopen(req, timeout=10) as resp:
+                      repo_info = json.loads(resp.read().decode())
+                  stars = repo_info.get("stargazers_count", 0)
+                  forks = repo_info.get("forks_count", 0)
+                  open_issues = repo_info.get("open_issues_count", 0)
+                  watchers = repo_info.get("subscribers_count", 0)
+              except Exception:
+                  stars, forks, open_issues, watchers = "?", "?", "?", "?"
+
+              msg = (
+                  f"📊 <b>agyswap Weekly Pulse &amp; Stats</b> 📈\n\n"
+                  f"⭐ <b>Stars:</b> {stars}\n"
+                  f"🍴 <b>Forks:</b> {forks}\n"
+                  f"🚨 <b>Open Issues/PRs:</b> {open_issues}\n"
+                  f"👁️ <b>Watchers:</b> {watchers}\n\n"
+                  f"📦 <b>Repository:</b> {repo_link}\n"
+                  f"🌐 <b>Website:</b> <a href='https://g1mn.github.io/agyswap'>g1mn.github.io/agyswap</a>\n\n"
+                  f"Have a productive week with agyswap! 🚀"
+              )
+
+          # 9. Manual Workflow Dispatch Test
+          elif event_name == "workflow_dispatch":
+              msg = f"🔔 <b>agyswap Telegram Test</b>\n\n💬 {html.escape(test_msg)}\n👤 Triggered by: {actor_link}"
+
+          # Fallback
+          else:
+              msg = f"📢 <b>agyswap Event:</b> {html.escape(event_name)}\n👤 By: {actor_link}\n📦 {repo_link}"
+
+          if msg:
+              post_data = urllib.parse.urlencode({
+                  "chat_id": tg_chat,
+                  "parse_mode": "HTML",
+                  "disable_web_page_preview": True,
+                  "text": msg
+              }).encode("utf-8")
+
+              req = urllib.request.Request(
+                  f"https://api.telegram.org/bot{tg_token}/sendMessage",
+                  data=post_data,
+                  headers={"Content-Type": "application/x-www-form-urlencoded"}
+              )
+              try:
+                  with urllib.request.urlopen(req, timeout=15) as resp:
+                      print("Telegram message sent successfully.")
+              except Exception as e:
+                  print(f"Failed to send Telegram message: {e}")
+                  exit(1)
+          EOF
