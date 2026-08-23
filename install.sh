@@ -5,16 +5,25 @@
 # ==============================================================================
 set -euo pipefail
 
+if [ "$(uname -s)" != "Darwin" ]; then
+    echo "❌ Error: agyswap is currently only supported on macOS (macOS Keychain required)." >&2
+    exit 1
+fi
+
 INSTALL_DIR="${AGYSWAP_INSTALL_DIR:-$HOME/.local/bin}"
 REPO="g1mn/agyswap"
-RAW_URL="https://raw.githubusercontent.com/${REPO}/main/bin/agyswap"
+RAW_URL="https://raw.githubusercontent.com/${REPO}/main/agyswap.py"
 
 mkdir -p "$INSTALL_DIR"
 
 echo "📦 Installing agyswap..."
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-if [ -f "$SCRIPT_DIR/bin/agyswap" ]; then
+if [ -f "$SCRIPT_DIR/agyswap.py" ]; then
+    echo "  • Installing from local repository: $SCRIPT_DIR/agyswap.py"
+    ln -sf "$SCRIPT_DIR/agyswap.py" "$INSTALL_DIR/agyswap"
+    chmod +x "$SCRIPT_DIR/agyswap.py"
+elif [ -f "$SCRIPT_DIR/bin/agyswap" ]; then
     echo "  • Installing from local repository: $SCRIPT_DIR/bin/agyswap"
     ln -sf "$SCRIPT_DIR/bin/agyswap" "$INSTALL_DIR/agyswap"
     chmod +x "$SCRIPT_DIR/bin/agyswap"

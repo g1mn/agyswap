@@ -21,7 +21,19 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
 
-    - name: Check Syntax & Version
+    - name: Check Syntax & Compilation
       run: |
-        python3 -m py_compile bin/agyswap
-        ./bin/agyswap --version
+        python3 -m py_compile agyswap.py bin/agyswap
+
+    - name: Test Pip Package Build & Installation
+      run: |
+        pip install .
+        agyswap --version
+        agyswap --help
+        agyswap list
+        agyswap audit
+
+    - name: Test Local Installer
+      run: |
+        ./install.sh
+        ~/.local/bin/agyswap --version
