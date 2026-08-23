@@ -143,7 +143,18 @@ except Exception:
 class KeychainManager:
     @classmethod
     def get_raw_password(cls) -> str:
-        # 1. Attempt Native C API
+        # 1. CLI First (Uses Apple system binary which never triggers Security Agent UI prompts)
+        cmd = [
+            "security", "find-generic-password",
+            "-s", KEYCHAIN_SERVICE,
+            "-a", KEYCHAIN_ACCOUNT,
+            "-w"
+        ]
+        res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        if res.returncode == 0 and res.stdout.strip():
+            return res.stdout.strip()
+
+        # 2. Native C API Fallback
         if _sec_lib:
             try:
                 s_bytes = KEYCHAIN_SERVICE.encode("utf-8")
@@ -163,17 +174,7 @@ class KeychainManager:
             except Exception:
                 pass
 
-        # 2. CLI Fallback
-        cmd = [
-            "security", "find-generic-password",
-            "-s", KEYCHAIN_SERVICE,
-            "-a", KEYCHAIN_ACCOUNT,
-            "-w"
-        ]
-        res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-        if res.returncode != 0:
-            raise RuntimeError(f"Keychain entry '{KEYCHAIN_SERVICE}/{KEYCHAIN_ACCOUNT}' not found. Please log in using 'agy' first.")
-        return res.stdout.strip()
+        raise RuntimeError(f"Keychain entry '{KEYCHAIN_SERVICE}/{KEYCHAIN_ACCOUNT}' not found. Please log in using 'agy' first.")
 
     @classmethod
     def get_current_payload(cls) -> dict:
@@ -199,16 +200,20 @@ class KeychainManager:
 
         # Create fresh generic-password with -A (allow any app) and trusted binaries
         agy_bin = shutil.which("agy") or "/opt/homebrew/bin/agy"
+        python_bin = sys.executable or "/opt/homebrew/bin/python3"
         cmd = [
             "security", "add-generic-password",
             "-a", KEYCHAIN_ACCOUNT,
             "-s", KEYCHAIN_SERVICE,
             "-w", raw_password,
             "-U",
-            "-A"
+            "-A",
+            "-T", "/usr/bin/security"
         ]
         if Path(agy_bin).exists():
-            cmd.extend(["-T", agy_bin, "-T", "/usr/bin/security"])
+            cmd.extend(["-T", agy_bin])
+        if Path(python_bin).exists():
+            cmd.extend(["-T", python_bin])
 
         res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         if res.returncode != 0:
