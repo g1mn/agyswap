@@ -30,9 +30,8 @@
 
 ### 🌐 Interactive Architecture Dashboard
 For a live, interactive visualization of account slots, switching sequences, and storage layouts:
-- **1-Click CLI Open**: Run `agyswap viz --open` to view your local status in your default browser.
-- **Local File**: Open [`docs/index.html`](docs/index.html) (`open docs/index.html`).
-- **Live Demo**: Hosted on GitHub Pages at [https://g1mn.github.io/agyswap](https://g1mn.github.io/agyswap).
+- **1-Click CLI Open**: Run `agyswap viz --open` to view your local account status in your default browser (saved in isolated `~/.agy-swap/dashboard.html` with Mode `0600`, completely git-clean).
+- **Online Demo**: Hosted on GitHub Pages at [https://g1mn.github.io/agyswap](https://g1mn.github.io/agyswap).
 
 ---
 

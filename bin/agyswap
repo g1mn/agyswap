@@ -1247,23 +1247,20 @@ def safe_json_for_script(data) -> str:
     return json.dumps(data, ensure_ascii=True, indent=2).replace("<", "\u003c").replace(">", "\u003e").replace("&", "\u0026")
 
 def cmd_viz(args):
-    """Updates docs/index.html and docs/agyswap.html with real-time local slot status."""
+    """Generates an interactive HTML dashboard in isolated ~/.agy-swap/ without modifying git-tracked docs/."""
     current_path = Path(__file__).resolve()
     candidates = [
-        current_path.parent / "docs",
-        current_path.parent.parent / "docs",
-        Path.cwd() / "docs"
+        current_path.parent / "docs" / "index.html",
+        current_path.parent.parent / "docs" / "index.html",
+        Path.cwd() / "docs" / "index.html"
     ]
-    docs_dir = next((d for d in candidates if d.is_dir()), None)
-    if not docs_dir:
-        print(red("✗ HTML dashboard directory 'docs/' not found."))
+    template_path = next((p for p in candidates if p.exists()), None)
+    if not template_path:
+        print(red("✗ HTML dashboard template not found."))
         sys.exit(1)
 
-    html_targets = [docs_dir / "index.html", docs_dir / "agyswap.html"]
-    valid_targets = [p for p in html_targets if p.exists()]
-    if not valid_targets:
-        print(red(f"✗ HTML dashboard files not found in {docs_dir}"))
-        sys.exit(1)
+    with open(template_path, "r", encoding="utf-8") as f:
+        html = f.read()
 
     cfg = StorageManager.load_config()
     accounts = cfg.get("accounts", [])
@@ -1318,25 +1315,38 @@ def cmd_viz(args):
         "ACTIVE_SLOT": f"const ACTIVE_SLOT = {safe_json_for_script(active_slot)};",
     }
 
-    for html_path in valid_targets:
-        with open(html_path, "r", encoding="utf-8") as f:
-            html = f.read()
-
-        replaced = 0
-        for name, body in blocks.items():
-            pattern = re.compile(rf"(/\* GEN:{re.escape(name)} \*/)(.*?)(/\* /GEN:{re.escape(name)} \*/)", re.DOTALL)
-            if not pattern.search(html):
-                continue
+    for name, body in blocks.items():
+        pattern = re.compile(rf"(/\* GEN:{re.escape(name)} \*/)(.*?)(/\* /GEN:{re.escape(name)} \*/)", re.DOTALL)
+        if pattern.search(html):
             html = pattern.sub(lambda m, n=name, b=body: f"/* GEN:{n} */\n{b}\n/* /GEN:{n} */", html)
-            replaced += 1
 
-        with open(html_path, "w", encoding="utf-8") as f:
+    # If --update-docs is explicitly requested by developer
+    if getattr(args, "update_docs", False):
+        with open(template_path, "w", encoding="utf-8") as f:
             f.write(html)
+        print(green(f"✓ Updated template file in docs/index.html (XSS-safe)"))
+        print(f"  • Registered Slots: {len(slots_data)} (Active #{active_slot})")
+        return
 
-    print(green(f"✓ Updated {len(valid_targets)} dashboard file(s) in docs/ (XSS-safe)"))
+    # Default: Save to isolated ~/.agy-swap/dashboard.html (0600)
+    output_path = Path(getattr(args, "output", None) or (BASE_DIR / "dashboard.html"))
+    with open(output_path, "w", encoding="utf-8", opener=secure_opener) as f:
+        f.write(html)
+
+    print(green(f"✓ Generated privacy-isolated dashboard: {output_path}"))
     print(f"  • Registered Slots: {len(slots_data)} (Active #{active_slot})")
     print(f"  • Keychain Connection: {'Connected' if keychain_status['connected'] else 'Disconnected'}")
-    print(f"  • View locally: open {valid_targets[0]}")
+    print(f"  • Security: 0600 isolated (git-clean, no risk of leaking real emails to GitHub Pages)")
+
+    should_open = getattr(args, "open", False)
+    if should_open:
+        try:
+            subprocess.run(["open", str(output_path)], check=False)
+            print(f"  • Opened in default browser.")
+        except Exception:
+            pass
+    else:
+        print(f"  • View locally: open {output_path} (or run 'agyswap viz --open')")
 
 def cmd_completion(args):
     """Generates shell auto-completion scripts."""
@@ -1595,7 +1605,10 @@ def main():
     p_import = subparsers.add_parser("import", help="Import slot metadata from JSON")
     p_import.add_argument("file", help="Path to JSON file")
 
-    subparsers.add_parser("viz", help="Update docs/index.html with local status")
+    p_viz = subparsers.add_parser("viz", help="Generate privacy-isolated local HTML dashboard")
+    p_viz.add_argument("--open", action="store_true", help="Open generated dashboard in default browser")
+    p_viz.add_argument("-o", "--output", help="Custom output HTML path (default: ~/.agy-swap/dashboard.html)")
+    p_viz.add_argument("--update-docs", action="store_true", dest="update_docs", help="Update git-tracked docs/index.html (developer only)")
 
     p_completion = subparsers.add_parser("completion", help="Generate shell auto-completion script")
     p_completion.add_argument("shell", choices=["bash", "zsh", "fish"], help="Target shell")
