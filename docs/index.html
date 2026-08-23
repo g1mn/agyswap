@@ -6,104 +6,350 @@
 <title>agyswap — Architecture & Interactive Visualizer</title>
 <script>(function(){try{var t=localStorage.getItem('agyswap-theme');if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
 <style>
-  :root{
-    --canvas:#E7ECF2; --surface:#FFFFFF; --ink:#1C2733; --muted:#5C6A7A; --faint:#8A97A6;
-    --line:#C7D0DB; --grid:#E3E9F0; --accent:#2563EB;
-    --ok:#1E9E6A; --ok-tint:#E4F4ED; --warn:#B7791F; --warn-tint:#FBF0DC;
-    --crit:#C0392B; --crit-tint:#F7E5E2; --ser:#B85A2E; --ser-tint:#F7E9E0;
-    --dot:rgba(60,80,110,.10);
-    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
-    --mono:ui-monospace,"SF Mono","JetBrains Mono",Menlo,monospace;
-    --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a;
-    --s1-tint:rgba(42,120,214,.10); --s2-tint:rgba(235,104,52,.10); --s3-tint:rgba(27,175,122,.10);
+  :root {
+    --canvas: #0E131A;
+    --surface: #161D27;
+    --card-bg: #1B2430;
+    --ink: #E6EDF3;
+    --muted: #8B949E;
+    --faint: #6E7681;
+    --line: #30363D;
+    --grid: rgba(255,255,255,0.03);
+    --accent: #58A6FF;
+    --accent-tint: rgba(88,166,255,0.12);
+    --ok: #3FB950;
+    --ok-tint: rgba(63,185,80,0.12);
+    --warn: #D29922;
+    --warn-tint: rgba(210,153,34,0.12);
+    --crit: #F85149;
+    --crit-tint: rgba(248,81,73,0.12);
+    --s1: #388BFD;
+    --s2: #F0883E;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Monaco, Consolas, monospace;
   }
-  @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
-    --canvas:#141A21; --surface:#1D242D; --ink:#E4EAF1; --muted:#93A1B1; --faint:#6B7886;
-    --line:#333F4C; --grid:#28313C; --accent:#3B82F6;
-    --ok:#37B586; --ok-tint:#1B3229; --warn:#CE9433; --warn-tint:#33290F;
-    --crit:#D8604F; --crit-tint:#3A211D; --ser:#E08B62; --ser-tint:#3A2618;
-    --dot:rgba(140,160,185,.08);
-    --s1:#3987e5; --s2:#d95926; --s3:#199e70;
-    --s1-tint:rgba(57,135,229,.14); --s2-tint:rgba(217,89,38,.14); --s3-tint:rgba(25,158,112,.14);
-  }}
-  :root[data-theme="dark"]{
-    --canvas:#141A21; --surface:#1D242D; --ink:#E4EAF1; --muted:#93A1B1; --faint:#6B7886;
-    --line:#333F4C; --grid:#28313C; --accent:#3B82F6;
-    --ok:#37B586; --ok-tint:#1B3229; --warn:#CE9433; --warn-tint:#33290F;
-    --crit:#D8604F; --crit-tint:#3A211D; --ser:#E08B62; --ser-tint:#3A2618;
-    --dot:rgba(140,160,185,.08);
-    --s1:#3987e5; --s2:#d95926; --s3:#199e70;
-    --s1-tint:rgba(57,135,229,.14); --s2-tint:rgba(217,89,38,.14); --s3-tint:rgba(25,158,112,.14);
-  }
-  :root[data-theme="light"]{
-    --canvas:#E7ECF2; --surface:#FFFFFF; --ink:#1C2733; --muted:#5C6A7A; --faint:#8A97A6;
-    --line:#C7D0DB; --grid:#E3E9F0; --accent:#2563EB;
-    --ok:#1E9E6A; --ok-tint:#E4F4ED; --warn:#B7791F; --warn-tint:#FBF0DC;
-    --crit:#C0392B; --crit-tint:#F7E5E2; --ser:#B85A2E; --ser-tint:#F7E9E0;
-    --dot:rgba(60,80,110,.10);
-    --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a;
-    --s1-tint:rgba(42,120,214,.10); --s2-tint:rgba(235,104,52,.10); --s3-tint:rgba(27,175,122,.10);
+  :root[data-theme="light"] {
+    --canvas: #F6F8FA;
+    --surface: #FFFFFF;
+    --card-bg: #F0F3F6;
+    --ink: #1F2328;
+    --muted: #656D76;
+    --faint: #8C959F;
+    --line: #D0D7DE;
+    --grid: rgba(0,0,0,0.02);
+    --accent: #0969DA;
+    --accent-tint: rgba(9,105,218,0.08);
+    --ok: #1A7F37;
+    --ok-tint: rgba(26,127,55,0.08);
+    --warn: #9A6700;
+    --warn-tint: rgba(154,103,0,0.08);
+    --crit: #CF222E;
+    --crit-tint: rgba(207,34,46,0.08);
+    --s1: #0969DA;
+    --s2: #BC4C00;
   }
 
-  *{box-sizing:border-box}
-  html{scroll-behavior:smooth}
-  body{margin:0;background:var(--canvas);color:var(--ink);font-family:var(--sans);
-       -webkit-font-smoothing:antialiased;line-height:1.5;
-       background-image:radial-gradient(circle,var(--dot) 1px,transparent 1.4px);
-       background-size:22px 22px;padding:22px 20px 100px}
-  .wrap{max-width:1380px;margin:0 auto}
-  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700}
-  h1{font-size:clamp(22px,3.2vw,30px);font-weight:760;letter-spacing:-.01em;margin:3px 0 6px}
-  h1 .sub{color:var(--muted);font-weight:500;font-size:.6em}
-  .lede{color:var(--muted);font-size:13.5px;max-width:70em;margin:0 0 16px}
-  .topbar{display:flex;align-items:flex-start;gap:14px;justify-content:space-between;flex-wrap:wrap}
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--canvas);
+    color: var(--ink);
+    font-family: var(--sans);
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    padding: 24px 20px 100px;
+  }
+  .wrap { max-width: 1400px; margin: 0 auto; }
 
-  .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin:18px 0 24px}
-  .tile{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
-  .tile .k{font-family:var(--mono);font-size:11px;color:var(--faint);text-transform:uppercase}
-  .tile .v{font-size:18px;font-weight:750;color:var(--ink);margin:4px 0}
-  .tile .n{font-size:11.5px;color:var(--muted)}
+  .topbar {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+  }
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  h1 {
+    font-size: clamp(24px, 3.2vw, 32px);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    margin: 4px 0 8px;
+  }
+  h1 .sub { color: var(--muted); font-weight: 400; font-size: 0.6em; }
+  .lede { color: var(--muted); font-size: 14px; max-width: 76em; margin: 0; }
 
-  .main-grid{display:grid;grid-template-columns:260px 1fr;gap:20px;align-items:start}
-  @media(max-width:960px){.main-grid{grid-template-columns:1fr}}
+  /* Feature Metrics Tiles */
+  .tiles {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .tile {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 14px 16px;
+    transition: transform 0.15s, border-color 0.15s;
+  }
+  .tile:hover { transform: translateY(-2px); border-color: var(--accent); }
+  .tile .k {
+    font-family: var(--mono);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--faint);
+  }
+  .tile .v {
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--ink);
+    margin: 4px 0 2px;
+  }
+  .tile .n { font-size: 12px; color: var(--muted); }
 
-  .rail{position:sticky;top:20px;display:flex;flex-direction:column;gap:14px}
-  .panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px}
-  .panel h3{margin:0 0 10px;font-size:12px;text-transform:uppercase;letter-spacing:.1em;color:var(--faint);font-family:var(--mono)}
+  /* Layout Columns */
+  .cols {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 24px;
+    align-items: start;
+  }
+  @media(max-width: 980px) { .cols { grid-template-columns: 1fr; } }
+
+  .rail { position: sticky; top: 20px; display: flex; flex-direction: column; gap: 16px; }
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 16px;
+  }
+  .panel h3 {
+    margin: 0 0 12px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--faint);
+    font-family: var(--mono);
+    font-weight: 700;
+  }
+
+  .preset-buttons { display: flex; flex-direction: column; gap: 6px; }
+  .preset-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--muted);
+    background: var(--card-bg);
+    border: 1px solid var(--line);
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.15s;
+  }
+  .preset-btn:hover { color: var(--ink); border-color: var(--accent); }
+  .preset-btn.active {
+    color: var(--accent);
+    background: var(--accent-tint);
+    border-color: var(--accent);
+  }
+
+  .nav-jump { display: flex; flex-direction: column; gap: 3px; }
+  .nav-jump a {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 12.5px;
+    color: var(--muted);
+    text-decoration: none;
+    transition: all 0.12s;
+  }
+  .nav-jump a:hover { background: var(--card-bg); color: var(--ink); }
+  .nav-letter {
+    display: inline-flex;
+    width: 18px;
+    height: 18px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    background: var(--canvas);
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 800;
+    color: var(--accent);
+  }
+
+  main { display: flex; flex-direction: column; gap: 20px; }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 20px 24px;
+  }
+  .card h2 {
+    font-size: 18px;
+    font-weight: 750;
+    letter-spacing: -0.01em;
+    margin: 0 0 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .badge {
+    display: inline-block;
+    padding: 3px 8px;
+    font-size: 11px;
+    font-family: var(--mono);
+    font-weight: 700;
+    border-radius: 5px;
+    background: var(--ok-tint);
+    color: var(--ok);
+  }
+  .badge-warn { background: var(--warn-tint); color: var(--warn); }
+  .badge-crit { background: var(--crit-tint); color: var(--crit); }
+  .badge-accent { background: var(--accent-tint); color: var(--accent); }
+
+  /* SVG Interactive Canvas */
+  .canvas-wrap {
+    background: var(--canvas);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 16px;
+    overflow-x: auto;
+    text-align: center;
+  }
+  .topology-svg {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 0 auto;
+  }
+  .svg-node { transition: all 0.25s ease; cursor: pointer; }
+  .svg-node:hover rect { stroke: var(--accent); stroke-width: 2.5px; }
+  .svg-link { transition: all 0.25s ease; }
+  .dimmed { opacity: 0.2; }
+  .highlighted rect { stroke: var(--accent) !important; stroke-width: 2.5px !important; }
+
+  /* Tables */
+  table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 12px 0; }
+  th, td { padding: 10px 12px; border-bottom: 1px solid var(--line); text-align: left; }
+  th { font-family: var(--mono); font-size: 11px; color: var(--faint); text-transform: uppercase; letter-spacing: 0.05em; }
   
-  .card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px;margin-bottom:18px}
-  .card h2{font-size:17px;font-weight:720;margin:0 0 12px;display:flex;align-items:center;gap:8px}
-  .badge{display:inline-block;padding:2px 7px;font-size:10px;font-family:var(--mono);font-weight:700;border-radius:4px;background:var(--ok-tint);color:var(--ok)}
-  .badge-warn{background:var(--warn-tint);color:var(--warn)}
-  .badge-crit{background:var(--crit-tint);color:var(--crit)}
+  .mono { font-family: var(--mono); }
+  .codeblock {
+    background: var(--canvas);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-family: var(--mono);
+    font-size: 12.5px;
+    overflow-x: auto;
+    color: var(--ink);
+    line-height: 1.6;
+  }
 
-  table{width:100%;border-collapse:collapse;font-size:12.5px;margin:10px 0}
-  th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left}
-  th{font-family:var(--mono);font-size:11px;color:var(--faint);text-transform:uppercase}
-  
-  .codeblock{background:var(--canvas);border:1px solid var(--line);border-radius:6px;padding:10px;font-family:var(--mono);font-size:12px;overflow-x:auto;color:var(--ink)}
-  .mono{font-family:var(--mono)}
+  /* Command Cards */
+  .cmd-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; }
+  .cmd-card {
+    background: var(--canvas);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .cmd-card .sig { font-family: var(--mono); font-weight: 700; font-size: 13px; color: var(--accent); margin-bottom: 6px; }
+  .cmd-card .desc { font-size: 12.5px; color: var(--muted); line-height: 1.5; }
 
-  .nav-jump{display:flex;flex-direction:column;gap:4px}
-  .nav-jump a{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;color:var(--muted);text-decoration:none;font-size:12.5px}
-  .nav-jump a:hover{background:var(--canvas);color:var(--ink)}
-  .nav-letter{display:inline-flex;width:18px;height:18px;align-items:center;justify-content:center;border-radius:4px;background:var(--canvas);font-family:var(--mono);font-size:10px;font-weight:700;color:var(--accent)}
+  /* Flow Sequence */
+  .flow { display: flex; flex-direction: column; gap: 10px; }
+  .flow-step {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    background: var(--canvas);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 12px 14px;
+  }
+  .flow-step .num {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--accent-tint);
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 800;
+    flex-shrink: 0;
+  }
+  .flow-step h4 { margin: 0 0 3px; font-size: 13.5px; font-weight: 700; }
+  .flow-step p { margin: 0; font-size: 12.5px; color: var(--muted); }
 
-  .faq-q{cursor:pointer;padding:10px 0;font-weight:650;font-size:13.5px;display:flex;justify-content:space-between}
-  .faq-a{display:none;padding:0 0 10px;font-size:13px;color:var(--muted);line-height:1.6}
-  .faq-item.open .faq-a{display:block}
-  .faq-item.open .faq-q{color:var(--accent)}
+  /* Tabs */
+  .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin-bottom: 14px; }
+  .tab-btn {
+    padding: 8px 16px;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .tab-btn:hover { color: var(--ink); }
+  .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* FAQ Accordion */
+  .faq-item { border: 1px solid var(--line); border-radius: 8px; margin-bottom: 8px; overflow: hidden; }
+  .faq-q {
+    padding: 12px 16px;
+    background: var(--canvas);
+    font-size: 13.5px;
+    font-weight: 650;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    user-select: none;
+  }
+  .faq-q:hover { color: var(--accent); }
+  .faq-a { display: none; padding: 14px 16px; font-size: 13px; color: var(--muted); line-height: 1.6; background: var(--surface); }
+  .faq-item.open .faq-a { display: block; }
+  .faq-item.open .faq-q { color: var(--accent); border-bottom: 1px solid var(--line); }
 </style>
 </head>
 <body>
 <div class="wrap">
   <header class="topbar">
     <div>
-      <div class="eyebrow">agyswap • Architecture &amp; Lifecycle View</div>
+      <div class="eyebrow">agyswap • Architecture &amp; Lifecycle Map</div>
       <h1>agyswap <span class="sub">— Antigravity CLI Account Switcher</span></h1>
-      <p class="lede">Visual reference for macOS Keychain integration, POSIX 0600 storage isolation, and token lifecycle management.</p>
+      <p class="lede">Visual topology for native macOS Keychain integration, zero-dependency process coordination, and POSIX 0600 security isolation.</p>
     </div>
-    <button id="themeBtn" style="padding:6px 12px;background:var(--surface);border:1px solid var(--line);border-radius:6px;cursor:pointer;color:var(--ink);font-family:var(--mono);font-size:12px">🌓 Theme</button>
+    <button id="themeBtn" style="padding:7px 14px;background:var(--surface);border:1px solid var(--line);border-radius:6px;cursor:pointer;color:var(--ink);font-family:var(--mono);font-size:12px;font-weight:600">🌓 Theme</button>
   </header>
 
   <!-- Core Feature Highlights -->
@@ -130,28 +376,40 @@
     </div>
   </section>
 
-  <div class="main-grid">
-    <!-- Sidebar Rail -->
+  <div class="cols">
+    <!-- Sidebar Controls -->
     <aside class="rail">
+      <div class="panel">
+        <h3>Interactive Presets</h3>
+        <div class="preset-buttons" id="presets">
+          <button class="preset-btn active" data-preset="all">🌐 Full System Architecture</button>
+          <button class="preset-btn" data-preset="keychain">🔐 Keychain I/O &amp; C API</button>
+          <button class="preset-btn" data-preset="switch">⚡ Account Switch Sequence</button>
+          <button class="preset-btn" data-preset="userinfo">👤 Google UserInfo Flow</button>
+        </div>
+      </div>
+
       <div class="panel">
         <h3>Quick Navigation</h3>
         <nav class="nav-jump">
           <a href="#sec-topology"><span class="nav-letter">A</span>Architecture Topology</a>
           <a href="#sec-slots"><span class="nav-letter">B</span>Slot Inventory</a>
-          <a href="#sec-sequence"><span class="nav-letter">C</span>Switch Sequence</a>
-          <a href="#sec-security"><span class="nav-letter">D</span>Security Model</a>
-          <a href="#sec-storage"><span class="nav-letter">E</span>Storage Layout</a>
-          <a href="#sec-faq"><span class="nav-letter">F</span>Troubleshooting FAQ</a>
+          <a href="#sec-sequence"><span class="nav-letter">C</span>Switching Sequence</a>
+          <a href="#sec-commands"><span class="nav-letter">D</span>Command Reference</a>
+          <a href="#sec-security"><span class="nav-letter">E</span>Security Model</a>
+          <a href="#sec-storage"><span class="nav-letter">F</span>Storage Layout</a>
+          <a href="#sec-install"><span class="nav-letter">G</span>Installation &amp; Setup</a>
+          <a href="#sec-faq"><span class="nav-letter">H</span>Troubleshooting FAQ</a>
         </nav>
       </div>
 
       <div class="panel">
-        <h3>Core Principles</h3>
+        <h3>Security Highlights</h3>
         <div style="font-size:12px;color:var(--muted);line-height:1.6">
-          <p style="margin:0 0 6px">⚡ <b>Zero Dependencies</b>: Python 3 standard library only</p>
-          <p style="margin:0 0 6px">🔐 <b>0% Argv Leak</b>: Direct macOS C API</p>
-          <p style="margin:0 0 6px">🔒 <b>File Mode 0600</b>: Strictly isolated to owner</p>
-          <p style="margin:0">🔄 <b>fcntl.flock</b>: Exclusive write locking</p>
+          <p style="margin:0 0 6px">🔒 <b>0% Argv Leak</b>: Direct Security.framework C binding</p>
+          <p style="margin:0 0 6px">🛡️ <b>0600 / 0700</b>: POSIX mode &amp; umask isolation</p>
+          <p style="margin:0 0 6px">⚡ <b>fcntl.flock</b>: Exclusive concurrent barrier</p>
+          <p style="margin:0">🚨 <b>Expiry Guard</b>: Prevents switching to expired tokens</p>
         </div>
       </div>
     </aside>
@@ -160,17 +418,106 @@
     <main>
       <!-- Section A: Topology -->
       <section class="card" id="sec-topology">
-        <h2>A · Architecture Topology <span class="badge">Component Map</span></h2>
-        <p style="color:var(--muted);font-size:13px;margin-top:0">Direct interaction between the CLI runtime, macOS Keychain, atomic local storage, and Google endpoints.</p>
-        <div style="text-align:center;background:var(--canvas);border:1px solid var(--line);border-radius:8px;padding:12px">
-          <img src="assets/architecture.svg" alt="agyswap architecture" style="max-width:100%;height:auto;border-radius:6px">
+        <h2>A · Interactive Architecture Topology <span class="badge" id="viewBadge">Full System</span></h2>
+        <p style="color:var(--muted);font-size:13px;margin-top:0">Click presets on the left or nodes below to inspect components across CLI runtime, macOS Keychain, and Google OAuth endpoints.</p>
+        
+        <div class="canvas-wrap">
+          <svg class="topology-svg" viewBox="0 0 960 480" width="100%" height="auto" role="img" aria-label="agyswap Architecture Topology">
+            <defs>
+              <marker id="arr-accent" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                <path d="M 0 1 L 8 5 L 0 9 z" fill="var(--accent)"/>
+              </marker>
+              <marker id="arr-ok" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                <path d="M 0 1 L 8 5 L 0 9 z" fill="var(--ok)"/>
+              </marker>
+              <marker id="arr-muted" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                <path d="M 0 1 L 8 5 L 0 9 z" fill="var(--muted)"/>
+              </marker>
+              <marker id="arr-warn" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                <path d="M 0 1 L 8 5 L 0 9 z" fill="var(--warn)"/>
+              </marker>
+            </defs>
+
+            <!-- Node 1: Developer Terminal -->
+            <g class="svg-node" id="node-cli" transform="translate(30, 150)">
+              <rect width="200" height="170" rx="8" fill="var(--surface)" stroke="var(--line)" stroke-width="1.5"/>
+              <text x="16" y="30" font-size="13" font-weight="700" fill="var(--ink)">💻 Developer / Shell</text>
+              <text x="16" y="56" font-size="11" font-family="var(--mono)" fill="var(--accent)">$ agyswap 2</text>
+              <text x="16" y="78" font-size="11" font-family="var(--mono)" fill="var(--accent)">$ agyswap switch work</text>
+              <text x="16" y="100" font-size="11" font-family="var(--mono)" fill="var(--muted)">$ agyswap health</text>
+              <text x="16" y="122" font-size="11" font-family="var(--mono)" fill="var(--muted)">$ agyswap audit</text>
+              <text x="16" y="150" font-size="10" font-family="var(--mono)" fill="var(--faint)">zsh · bash · fish</text>
+            </g>
+
+            <!-- Node 2: agyswap Engine Core -->
+            <g class="svg-node" id="node-core" transform="translate(290, 110)">
+              <rect width="320" height="250" rx="10" fill="var(--surface)" stroke="var(--accent)" stroke-width="2"/>
+              <rect width="320" height="34" rx="10" fill="var(--accent-tint)"/>
+              <rect x="0" y="24" width="320" height="10" fill="var(--accent-tint)"/>
+              <text x="16" y="23" font-size="13.5" font-weight="750" fill="var(--accent)">🔄 agyswap Engine Core (v0.1.0)</text>
+              
+              <text x="16" y="60" font-size="11.5" font-weight="650" fill="var(--ok)">⚡ Native C API Binding</text>
+              <text x="30" y="78" font-size="11" font-family="var(--mono)" fill="var(--muted)">SecKeychain APIs (0% argv leak)</text>
+              
+              <text x="16" y="106" font-size="11.5" font-weight="650" fill="var(--ok)">🔒 StorageManager &amp; File Lock</text>
+              <text x="30" y="124" font-size="11" font-family="var(--mono)" fill="var(--muted)">fcntl.flock + Mode 0600 / 0700</text>
+              
+              <text x="16" y="152" font-size="11.5" font-weight="650" fill="var(--ink)">🚨 Expired Token Guard &amp; Health</text>
+              <text x="30" y="170" font-size="11" font-family="var(--mono)" fill="var(--muted)">30-min soon warning + --force</text>
+              
+              <text x="16" y="198" font-size="11.5" font-weight="650" fill="var(--ink)">🌐 Google UserInfo &amp; JWT Claims</text>
+              <text x="30" y="216" font-size="11" font-family="var(--mono)" fill="var(--muted)">Offline parsing + Bearer API</text>
+
+              <text x="16" y="244" font-size="10" font-family="var(--mono)" fill="var(--faint)">Zero Dependencies · Pure Python 3</text>
+            </g>
+
+            <!-- Node 3: macOS Keychain -->
+            <g class="svg-node" id="node-keychain" transform="translate(670, 30)">
+              <rect width="260" height="90" rx="8" fill="var(--ok-tint)" stroke="var(--ok)" stroke-width="1.5"/>
+              <text x="16" y="28" font-size="13" font-weight="700" fill="var(--ok)">🔐 macOS Keychain</text>
+              <text x="16" y="50" font-size="11" font-family="var(--mono)" fill="var(--ink)">service: gemini / acct: antigravity</text>
+              <text x="16" y="70" font-size="11" font-family="var(--mono)" fill="var(--muted)">go-keyring-base64:&lt;JSON&gt;</text>
+            </g>
+
+            <!-- Node 4: Antigravity CLI -->
+            <g class="svg-node" id="node-agy" transform="translate(670, 150)">
+              <rect width="260" height="90" rx="8" fill="var(--surface)" stroke="var(--line)" stroke-width="1.5"/>
+              <text x="16" y="28" font-size="13" font-weight="700" fill="var(--ink)">🤖 Google Antigravity (agy)</text>
+              <text x="16" y="50" font-size="11" font-family="var(--mono)" fill="var(--ink)">Gemini / Code Execution Agent</text>
+              <text x="16" y="70" font-size="11" font-family="var(--mono)" fill="var(--muted)">~/.gemini/antigravity-cli/</text>
+            </g>
+
+            <!-- Node 5: Slot Storage -->
+            <g class="svg-node" id="node-storage" transform="translate(670, 270)">
+              <rect width="260" height="95" rx="8" fill="var(--surface)" stroke="var(--line)" stroke-width="1.5"/>
+              <text x="16" y="26" font-size="13" font-weight="700" fill="var(--ink)">📁 Local Slot Store (0600)</text>
+              <text x="16" y="48" font-size="11" font-family="var(--mono)" fill="var(--ink)">~/.agy-swap/slots/slot-*.json</text>
+              <text x="16" y="66" font-size="11" font-family="var(--mono)" fill="var(--muted)">config.json + rolling backups</text>
+              <text x="16" y="84" font-size="10.5" font-family="var(--mono)" fill="var(--faint)">.agyswap.lock (fcntl barrier)</text>
+            </g>
+
+            <!-- Node 6: Google UserInfo API -->
+            <g class="svg-node" id="node-google" transform="translate(670, 395)">
+              <rect width="260" height="60" rx="8" fill="var(--accent-tint)" stroke="var(--accent)" stroke-width="1.2"/>
+              <text x="16" y="24" font-size="12.5" font-weight="700" fill="var(--accent)">🌐 Google OAuth Endpoints</text>
+              <text x="16" y="44" font-size="11" font-family="var(--mono)" fill="var(--muted)">oauth2/v3/userinfo &amp; token</text>
+            </g>
+
+            <!-- Connection Links -->
+            <path class="svg-link" id="link-cli-core" d="M 230 235 L 290 235" stroke="var(--accent)" stroke-width="2.5" marker-end="url(#arr-accent)"/>
+            <path class="svg-link" id="link-core-keychain" d="M 610 160 L 670 85" stroke="var(--ok)" stroke-width="2" marker-end="url(#arr-ok)"/>
+            <path class="svg-link" id="link-keychain-agy" d="M 800 120 L 800 150" stroke="var(--muted)" stroke-width="1.8" stroke-dasharray="4 4" marker-end="url(#arr-muted)"/>
+            <path class="svg-link" id="link-core-storage" d="M 610 270 L 670 310" stroke="var(--muted)" stroke-width="2" marker-end="url(#arr-muted)"/>
+            <path class="svg-link" id="link-core-google" d="M 580 360 L 670 415" stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="3 3" marker-end="url(#arr-accent)"/>
+          </svg>
         </div>
       </section>
 
-      <!-- Section B: Slot Inventory Table -->
+      <!-- Section B: Slot Inventory -->
       <section class="card" id="sec-slots">
-        <h2>B · Account Slot Inventory <span class="badge" id="slotsBadge">3 Profiles</span></h2>
+        <h2>B · Account Slot Inventory <span class="badge" id="slotsBadge">3 Profiles Loaded</span></h2>
         <p style="color:var(--muted);font-size:13px;margin-top:0">Interactive preview of registered profile slots. Run <code style="font-family:var(--mono);color:var(--accent)">agyswap viz --open</code> locally on macOS to view your real accounts.</p>
+        
         <table id="slotsTable">
           <thead>
             <tr>
@@ -182,29 +529,111 @@
             </tr>
           </thead>
           <tbody id="slotsTbody">
-            <!-- Dynamic Injection -->
+            <!-- Populated dynamically by JS -->
           </tbody>
         </table>
       </section>
 
-      <!-- Section C: Switching Sequence -->
+      <!-- Section C: Switch Sequence -->
       <section class="card" id="sec-sequence">
-        <h2>C · Account Switching Execution Flow</h2>
-        <div class="codeblock">
-1. Developer runs: <span style="color:var(--accent)">agyswap switch work</span>
-2. StorageManager loads <span class="mono">~/.agy-swap/config.json</span> under exclusive <span class="mono">fcntl.flock</span>
-3. Verifies token expiry in <span class="mono">~/.agy-swap/slots/slot-2.json</span>
-   ├─ If EXPIRED and no --force: Halts execution with refresh hint
-   └─ If VALID or --force: Continues
-4. KeychainManager invokes macOS <span class="mono">SecKeychainItemModifyAttributesAndData</span> via ctypes
-5. Updates active_slot = 2 in config.json and releases file lock
-6. Scans running <span class="mono">agy</span> processes via <span class="mono">lsof</span> and emits session restart notice
+        <h2>C · Profile Switching Sequence <span class="badge">~0.1s Fast Path</span></h2>
+        <p style="color:var(--muted);font-size:13px;margin-top:0">Detailed execution flow triggered during an account switch operation.</p>
+        
+        <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));gap:16px">
+          <div class="flow">
+            <div class="flow-step">
+              <div class="num">1</div>
+              <div>
+                <h4>Concurrency Lock &amp; Target Resolution</h4>
+                <p>Acquires <span class="mono">fcntl.flock</span> on <span class="mono">.agyswap.lock</span> and resolves target slot by number, email, or alias.</p>
+              </div>
+            </div>
+            <div class="flow-step">
+              <div class="num">2</div>
+              <div>
+                <h4>Expired Token Guard</h4>
+                <p>Compares <span class="mono">token.expiry</span> with system UTC clock. If expired without <span class="mono">--force</span>, switch is safely blocked with a renewal guide.</p>
+              </div>
+            </div>
+            <div class="flow-step">
+              <div class="num">3</div>
+              <div>
+                <h4>Native C API Keychain Injection</h4>
+                <p>Directly modifies macOS Keychain using <span class="mono">SecKeychainItemModifyAttributesAndData</span> via <span class="mono">ctypes</span> without touching process argv.</p>
+              </div>
+            </div>
+            <div class="flow-step">
+              <div class="num">4</div>
+              <div>
+                <h4>Atomic Config Update &amp; Session Notice</h4>
+                <p>Atomically saves <span class="mono">config.json</span> and scans for running <span class="mono">agy</span> processes via <span class="mono">lsof</span> to emit session restart guidance.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="codeblock" style="margin:0">
+<span style="color:var(--faint)"># Example 1: Quick Switch</span>
+$ agyswap switch work
+<span style="color:var(--ok)">✓ Switched Antigravity profile to #2 (work@company.com).</span>
+<span style="color:var(--warn)">⚠️  Detected 1 running agy session:</span>
+   • PID 45920  ~/projects/agyswap  (1 session)
+   Start a new terminal session to apply the profile.
+
+<span style="color:var(--faint)"># Example 2: Expired Token Guard in Action</span>
+$ agyswap switch 3
+<span style="color:var(--crit)">✗ Slot #3 (dev@project.org) token has expired (expired 2h ago).</span>
+   Try refreshing:  agyswap rotate 3
+   Force switch:    agyswap switch 3 --force
+          </div>
         </div>
       </section>
 
-      <!-- Section D: Security Model -->
+      <!-- Section D: Command Reference -->
+      <section class="card" id="sec-commands">
+        <h2>D · Command Reference</h2>
+        <div class="cmd-grid">
+          <div class="cmd-card">
+            <div class="sig">agyswap [list|ls]</div>
+            <div class="desc">Displays account slots with tree-style token validity view, active session indicators, and sync timestamps.</div>
+          </div>
+          <div class="cmd-card">
+            <div class="sig">agyswap &lt;slot|alias&gt;</div>
+            <div class="desc">Quick-switches to target profile in ~0.1s. Supports slot numbers (#1, #2), emails, or aliases.</div>
+          </div>
+          <div class="cmd-card">
+            <div class="sig">agyswap add [alias]</div>
+            <div class="desc">Registers currently active agy login session as a managed slot with Google profile metadata.</div>
+          </div>
+          <div class="cmd-card">
+            <div class="sig">agyswap health [--json]</div>
+            <div class="desc">Overview dashboard of token expiry status across all registered profiles with warning flags.</div>
+          </div>
+          <div class="cmd-card">
+            <div class="sig">agyswap audit</div>
+            <div class="desc">Audits and auto-corrects filesystem permissions (0700/0600) and verifies Keychain integrity.</div>
+          </div>
+          <div class="cmd-card">
+            <div class="sig">agyswap rotate [slot]</div>
+            <div class="desc">Triggers token renewal for expired or soon-expiring OAuth profiles using refresh tokens.</div>
+          </div>
+          <div class="cmd-card">
+            <div class="sig">agyswap export [file]</div>
+            <div class="desc">Exports slot metadata to JSON format for migration (sensitive live tokens excluded for security).</div>
+          </div>
+          <div class="cmd-card">
+            <div class="sig">agyswap import &lt;file&gt;</div>
+            <div class="desc">Imports slot metadata from JSON with automatic slot conflict resolution.</div>
+          </div>
+          <div class="cmd-card">
+            <div class="sig">agyswap completion &lt;shell&gt;</div>
+            <div class="desc">Generates shell auto-completion scripts for zsh, bash, and fish with dynamic slot completion.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section E: Security Model -->
       <section class="card" id="sec-security">
-        <h2>D · Security Architecture &amp; Threat Model</h2>
+        <h2>E · Security Architecture &amp; Threat Model</h2>
         <table>
           <thead>
             <tr>
@@ -216,57 +645,106 @@
           <tbody>
             <tr>
               <td><b>Keychain Binding</b></td>
-              <td>macOS <span class="mono">Security.framework</span> Native C API</td>
+              <td>macOS <span class="mono">Security.framework</span> Native C API via <span class="mono">ctypes</span></td>
               <td>Process argument sniffing (<span class="mono">ps aux</span> / CWE-214)</td>
             </tr>
             <tr>
               <td><b>Storage Isolation</b></td>
-              <td>Files <span class="mono">0600</span>, Directories <span class="mono">0700</span> (<span class="mono">opener=secure_opener</span>)</td>
-              <td>Cross-user access and Umask race conditions</td>
+              <td>Files <span class="mono">0600</span>, Dirs <span class="mono">0700</span> (<span class="mono">opener=secure_opener</span>)</td>
+              <td>Cross-user access &amp; Umask race conditions</td>
             </tr>
             <tr>
               <td><b>Concurrency Lock</b></td>
               <td><span class="mono">fcntl.flock</span> on <span class="mono">.agyswap.lock</span></td>
-              <td>Lost updates during concurrent terminal operations</td>
+              <td>Lost updates during concurrent terminal runs</td>
             </tr>
             <tr>
               <td><b>Template Escaping</b></td>
-              <td><span class="mono">safe_json_for_script</span> Unicode character escaping</td>
+              <td><span class="mono">safe_json_for_script</span> Unicode character sanitization</td>
               <td>Stored XSS inside HTML <span class="mono">&lt;script&gt;</span> blocks</td>
             </tr>
           </tbody>
         </table>
       </section>
 
-      <!-- Section E: Storage Layout -->
+      <!-- Section F: Storage Layout -->
       <section class="card" id="sec-storage">
-        <h2>E · POSIX Storage Layout</h2>
+        <h2>F · POSIX Storage Layout</h2>
         <div class="codeblock">
 ~/.agy-swap/                           <span style="color:var(--faint)"># Mode 0700 (Owner rwx only)</span>
 ├── config.json                        <span style="color:var(--faint)"># Mode 0600 (active_slot, accounts metadata)</span>
 ├── .agyswap.lock                      <span style="color:var(--faint)"># Mode 0600 (flock concurrency barrier)</span>
-├── slots/                             <span style="color:var(--faint)"># Mode 0700 (Directory)</span>
-│   ├── slot-1.json                    <span style="color:var(--faint)"># Mode 0600 (Token credentials payload)</span>
+├── slots/                             <span style="color:var(--faint)"># Mode 0700 (Isolated slot directory)</span>
+│   ├── slot-1.json                    <span style="color:var(--faint)"># Mode 0600 (OAuth token credentials)</span>
 │   └── slot-2.json                    <span style="color:var(--faint)"># Mode 0600</span>
 └── backup/                            <span style="color:var(--faint)"># Mode 0700 (Directory)</span>
     └── config-YYYYMMDD-HHMMSS.json    <span style="color:var(--faint)"># Mode 0600 (Rolling automated backups)</span>
         </div>
       </section>
 
-      <!-- Section F: FAQ -->
+      <!-- Section G: Installation & Setup -->
+      <section class="card" id="sec-install">
+        <h2>G · Installation &amp; Shell Completion</h2>
+        <div class="tabs">
+          <button class="tab-btn active" data-tab="tab-install-curl">1-Line Install</button>
+          <button class="tab-btn" data-tab="tab-install-pip">Pip / Pipx</button>
+          <button class="tab-btn" data-tab="tab-install-zsh">Zsh Completion</button>
+          <button class="tab-btn" data-tab="tab-install-bash">Bash Completion</button>
+          <button class="tab-btn" data-tab="tab-install-fish">Fish Completion</button>
+        </div>
+
+        <div class="tab-panel active" id="tab-install-curl">
+          <div class="codeblock">
+<span style="color:var(--faint)"># Install via official installer script:</span>
+curl -fsSL https://raw.githubusercontent.com/g1mn/agyswap/main/install.sh | bash
+          </div>
+        </div>
+
+        <div class="tab-panel" id="tab-install-pip">
+          <div class="codeblock">
+<span style="color:var(--faint)"># Install from cloned repository via pip/pipx:</span>
+git clone https://github.com/g1mn/agyswap.git
+cd agyswap
+pip install .
+          </div>
+        </div>
+
+        <div class="tab-panel" id="tab-install-zsh">
+          <div class="codeblock">
+<span style="color:var(--faint)"># Add to ~/.zshrc:</span>
+echo 'eval "$(agyswap completion zsh)"' >> ~/.zshrc &amp;&amp; source ~/.zshrc
+          </div>
+        </div>
+
+        <div class="tab-panel" id="tab-install-bash">
+          <div class="codeblock">
+<span style="color:var(--faint)"># Add to ~/.bashrc:</span>
+echo 'eval "$(agyswap completion bash)"' >> ~/.bashrc &amp;&amp; source ~/.bashrc
+          </div>
+        </div>
+
+        <div class="tab-panel" id="tab-install-fish">
+          <div class="codeblock">
+<span style="color:var(--faint)"># Install to fish completions directory:</span>
+agyswap completion fish > ~/.config/fish/completions/agyswap.fish
+          </div>
+        </div>
+      </section>
+
+      <!-- Section H: FAQ -->
       <section class="card" id="sec-faq">
-        <h2>F · Troubleshooting FAQ</h2>
+        <h2>H · Troubleshooting FAQ</h2>
         <div class="faq-item">
-          <div class="faq-q">Do running agy CLI sessions switch instantly? <span>+</span></div>
-          <div class="faq-a">macOS caches Keychain reads in memory for short durations. While the Keychain updates immediately in ~0.1s, starting a new terminal prompt or restarting existing agy processes guarantees instant activation.</div>
+          <div class="faq-q">Do running agy CLI sessions switch immediately? <span>+</span></div>
+          <div class="faq-a">macOS caches Keychain reads in memory for short durations. While the Keychain is updated instantly in ~0.1s, starting a new terminal prompt or restarting existing agy sessions guarantees active credential activation.</div>
         </div>
         <div class="faq-item">
           <div class="faq-q">How do I safely migrate to a new Mac? <span>+</span></div>
-          <div class="faq-a">Run <span class="mono">agyswap export backup.json</span> on your old machine. On your new Mac, run <span class="mono">agyswap import backup.json</span>. Live tokens are excluded from export for security; simply log into each account once via <span class="mono">agy</span> and run <span class="mono">agyswap sync</span>.</div>
+          <div class="faq-a">Run <span class="mono">agyswap export backup.json</span> on your old Mac. On your new Mac, run <span class="mono">agyswap import backup.json</span>. Live tokens are excluded from export for security; simply log into each profile once via <span class="mono">agy</span> and run <span class="mono">agyswap sync</span>.</div>
         </div>
         <div class="faq-item">
           <div class="faq-q">What should I do if a token expires? <span>+</span></div>
-          <div class="faq-a">Run <span class="mono">agyswap rotate &lt;slot&gt;</span> to attempt a token renewal, or log into the expired account using <span class="mono">agy</span> and run <span class="mono">agyswap sync</span>.</div>
+          <div class="faq-a">Run <span class="mono">agyswap rotate &lt;slot&gt;</span> to initiate a token refresh, or log into the expired account using <span class="mono">agy</span> and run <span class="mono">agyswap sync</span>.</div>
         </div>
       </section>
     </main>
@@ -280,13 +758,84 @@ themeBtn.addEventListener('click', function() {
   var cur = document.documentElement.getAttribute('data-theme') || 'dark';
   var next = cur === 'dark' ? 'light' : 'dark';
   document.documentElement.setAttribute('data-theme', next);
-  localStorage.setItem('agyswap-theme', next);
+  try { localStorage.setItem('agyswap-theme', next); } catch(e){}
+});
+
+/* Tabs */
+document.querySelectorAll('.tab-btn').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    var tabId = btn.getAttribute('data-tab');
+    document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+    document.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.remove('active'); });
+    btn.classList.add('active');
+    var targetPanel = document.getElementById(tabId);
+    if (targetPanel) targetPanel.classList.add('active');
+  });
 });
 
 /* FAQ Accordion */
 document.querySelectorAll('.faq-q').forEach(function(el) {
   el.addEventListener('click', function() {
-    el.parentElement.classList.toggle('open');
+    var item = el.parentElement;
+    item.classList.toggle('open');
+  });
+});
+
+/* Interactive Presets for SVG Topology */
+var presetMap = {
+  all: {
+    highlightNodes: ['node-cli', 'node-core', 'node-keychain', 'node-agy', 'node-storage', 'node-google'],
+    highlightLinks: ['link-cli-core', 'link-core-keychain', 'link-keychain-agy', 'link-core-storage', 'link-core-google'],
+    badge: 'Full System Architecture'
+  },
+  keychain: {
+    highlightNodes: ['node-core', 'node-keychain', 'node-agy'],
+    highlightLinks: ['link-core-keychain', 'link-keychain-agy'],
+    badge: 'Keychain I/O & C API Flow'
+  },
+  switch: {
+    highlightNodes: ['node-cli', 'node-core', 'node-storage', 'node-keychain'],
+    highlightLinks: ['link-cli-core', 'link-core-storage', 'link-core-keychain'],
+    badge: 'Account Switch Sequence'
+  },
+  userinfo: {
+    highlightNodes: ['node-core', 'node-google'],
+    highlightLinks: ['link-core-google'],
+    badge: 'Google UserInfo Flow'
+  }
+};
+
+document.querySelectorAll('.preset-btn').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('.preset-btn').forEach(function(b) { b.classList.remove('active'); });
+    btn.classList.add('active');
+
+    var presetKey = btn.getAttribute('data-preset');
+    var config = presetMap[presetKey] || presetMap.all;
+
+    document.getElementById('viewBadge').textContent = config.badge;
+
+    // Apply Dim / Highlight classes
+    var allNodes = document.querySelectorAll('.svg-node');
+    var allLinks = document.querySelectorAll('.svg-link');
+
+    allNodes.forEach(function(n) {
+      if (config.highlightNodes.indexOf(n.id) !== -1) {
+        n.classList.remove('dimmed');
+        n.classList.add('highlighted');
+      } else {
+        n.classList.remove('highlighted');
+        n.classList.add('dimmed');
+      }
+    });
+
+    allLinks.forEach(function(l) {
+      if (config.highlightLinks.indexOf(l.id) !== -1) {
+        l.classList.remove('dimmed');
+      } else {
+        l.classList.add('dimmed');
+      }
+    });
   });
 });
 
@@ -354,7 +903,7 @@ const SLOTS = [
 /* Render Slots Table */
 function renderDashboard() {
   var badge = document.getElementById('slotsBadge');
-  if (badge) badge.textContent = SLOTS.length + ' Profiles';
+  if (badge) badge.textContent = SLOTS.length + ' Profiles Loaded';
 
   var tbody = document.getElementById('slotsTbody');
   if (!tbody) return;
@@ -369,7 +918,7 @@ function renderDashboard() {
     tr.innerHTML = '<td><b>#' + s.slot + '</b>' + activeTag + '</td>' +
                    '<td>' + s.email + aliasTag + '</td>' +
                    '<td><span class="badge ' + statusClass + '">' + statusText + '</span></td>' +
-                   '<td class="mono">' + s.expiry_human + '</td>' +
+                   '<td class="mono">' + (s.expiry_human || '—') + '</td>' +
                    '<td class="mono" style="color:var(--faint)">' + (s.auth_method || 'consumer') + '</td>';
     tbody.appendChild(tr);
   });
