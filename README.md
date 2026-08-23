@@ -54,14 +54,27 @@ For a live, interactive visualization of account slots, switching sequences, and
 
 ---
 
-## 🚀 Quick Installation
+## 🚀 Installation
 
-### Option 1: One-Line Installer
+### Option 1: Homebrew (Recommended on macOS)
+```bash
+brew install g1mn/agyswap/agyswap
+```
+*Shell completions for `zsh`, `bash`, and `fish` are automatically configured by Homebrew.*
+
+### Option 2: One-Line Curl Installer
 ```bash
 curl -fsSL https://raw.githubusercontent.com/g1mn/agyswap/main/install.sh | bash
 ```
 
-### Option 2: Clone and Link
+### Option 3: Pip / Pipx
+```bash
+pip install agyswap
+# or
+pipx install agyswap
+```
+
+### Option 4: Clone and Install
 ```bash
 git clone https://github.com/g1mn/agyswap.git
 cd agyswap

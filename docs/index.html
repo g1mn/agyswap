@@ -730,14 +730,22 @@ $ agyswap switch 3
       <section class="card" id="sec-install">
         <h2>G · Installation &amp; Shell Completion</h2>
         <div class="tabs">
-          <button class="tab-btn active" data-tab="tab-install-curl">1-Line Install</button>
+          <button class="tab-btn active" data-tab="tab-install-brew">Homebrew (macOS)</button>
+          <button class="tab-btn" data-tab="tab-install-curl">1-Line Curl</button>
           <button class="tab-btn" data-tab="tab-install-pip">Pip / Pipx</button>
           <button class="tab-btn" data-tab="tab-install-zsh">Zsh Completion</button>
           <button class="tab-btn" data-tab="tab-install-bash">Bash Completion</button>
           <button class="tab-btn" data-tab="tab-install-fish">Fish Completion</button>
         </div>
 
-        <div class="tab-panel active" id="tab-install-curl">
+        <div class="tab-panel active" id="tab-install-brew">
+          <div class="codeblock">
+<span style="color:var(--faint)"># Install via Homebrew Tap (Shell completions automatically configured):</span>
+brew install g1mn/agyswap/agyswap
+          </div>
+        </div>
+
+        <div class="tab-panel" id="tab-install-curl">
           <div class="codeblock">
 <span style="color:var(--faint)"># Install via official installer script:</span>
 curl -fsSL https://raw.githubusercontent.com/g1mn/agyswap/main/install.sh | bash

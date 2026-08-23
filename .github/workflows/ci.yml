@@ -37,3 +37,7 @@ jobs:
       run: |
         ./install.sh
         ~/.local/bin/agyswap --version
+
+    - name: Test Homebrew Formula Syntax
+      run: |
+        ruby -c Formula/agyswap.rb
