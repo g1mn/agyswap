@@ -101,9 +101,15 @@
   /* Feature Metrics Tiles */
   .tiles {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    grid-template-columns: repeat(4, 1fr);
     gap: 12px;
     margin-bottom: 24px;
+  }
+  @media (max-width: 960px) {
+    .tiles { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 520px) {
+    .tiles { grid-template-columns: 1fr; }
   }
   .tile {
     background: var(--surface);
@@ -403,32 +409,22 @@
     <div class="tile">
       <div class="k">⚡ Switching Speed</div>
       <div class="v" style="color:var(--accent)">~0.1s</div>
-      <div class="n">Instant profile swap</div>
+      <div class="n">Instant profile & session swap</div>
     </div>
     <div class="tile">
       <div class="k">🪟 Session Isolation</div>
       <div class="v" style="color:var(--accent)">Per-Window</div>
-      <div class="n">Each terminal keeps its own account</div>
+      <div class="n">Parallel independent accounts</div>
     </div>
     <div class="tile">
       <div class="k">🔄 Token Rotation</div>
       <div class="v" style="color:var(--ok)">No Browser</div>
-      <div class="n">Background OAuth refresh for all slots</div>
+      <div class="n">Background OAuth refresh</div>
     </div>
     <div class="tile">
       <div class="k">🔐 Native Security</div>
       <div class="v" style="color:var(--ok)">C API Binding</div>
-      <div class="n">CWE-214 argv leak safe</div>
-    </div>
-    <div class="tile">
-      <div class="k">📦 Dependencies</div>
-      <div class="v">0 External</div>
-      <div class="n">Pure Python 3 standard library</div>
-    </div>
-    <div class="tile">
-      <div class="k">🔒 File Isolation</div>
-      <div class="v">0600 / 0700</div>
-      <div class="n">Atomic POSIX fcntl lock</div>
+      <div class="n">CWE-214 safe · 0600 POSIX mode</div>
     </div>
   </section>
 
