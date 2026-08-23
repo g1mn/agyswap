@@ -1,12 +1,22 @@
-# 🔄 agyswap
+<p align="center">
+  <a href="https://github.com/g1mn/agyswap">
+    <img src="assets/banner.svg" alt="agyswap Banner" width="100%">
+  </a>
+</p>
 
-**Fast Multi-Account Switcher & Session Manager for Google Antigravity (`agy`) CLI**  
-Manage and swap multiple Google Antigravity profiles on macOS Keychain with 0.1s switching, native OS credential security, and POSIX file isolation.
+<p align="center">
+  <a href="https://github.com/g1mn/agyswap/actions/workflows/ci.yml"><img src="https://github.com/g1mn/agyswap/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://github.com/g1mn/agyswap/releases"><img src="https://img.shields.io/github/v/release/g1mn/agyswap?color=blue&label=release" alt="Release"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"></a>
+  <a href="#-requirements"><img src="https://img.shields.io/badge/Platform-macOS-lightgrey.svg" alt="Platform: macOS"></a>
+  <a href="#-installation"><img src="https://img.shields.io/badge/Python-3.8+-green.svg" alt="Python: 3.8+"></a>
+  <a href="#-key-features"><img src="https://img.shields.io/badge/Dependencies-0-brightgreen.svg" alt="Zero Dependencies"></a>
+</p>
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Platform: macOS](https://img.shields.io/badge/Platform-macOS-lightgrey.svg)]()
-[![Python: 3.8+](https://img.shields.io/badge/Python-3.8+-green.svg)]()
-[![Zero Dependencies](https://img.shields.io/badge/Dependencies-0-brightgreen.svg)]()
+<p align="center">
+  <b>Fast Multi-Account Switcher &amp; Session Manager for Google Antigravity (<code>agy</code>) CLI</b><br>
+  Manage and swap multiple Google Antigravity OAuth profiles on macOS Keychain with ~0.1s speed, native OS C API security, and POSIX 0600 file isolation.
+</p>
 
 ---
 

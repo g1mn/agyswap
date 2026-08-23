@@ -1,0 +1,106 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 640" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bg-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0B0F17"/>
+      <stop offset="60%" stop-color="#111722"/>
+      <stop offset="100%" stop-color="#0D111A"/>
+    </linearGradient>
+    <linearGradient id="banner-orbit-1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38BDF8"/>
+      <stop offset="50%" stop-color="#3B82F6"/>
+      <stop offset="100%" stop-color="#1D4ED8"/>
+    </linearGradient>
+    <linearGradient id="banner-orbit-2" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#34D399"/>
+      <stop offset="50%" stop-color="#10B981"/>
+      <stop offset="100%" stop-color="#059669"/>
+    </linearGradient>
+    <radialGradient id="banner-core-glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#38BDF8" stop-opacity="0.25"/>
+      <stop offset="60%" stop-color="#3B82F6" stop-opacity="0.08"/>
+      <stop offset="100%" stop-color="#0B0F17" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="banner-glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="4" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1280" height="640" fill="url(#bg-grad)"/>
+
+  <!-- Subtle Dot Grid Matrix -->
+  <g fill="#30363D" opacity="0.3">
+    <circle cx="80" cy="80" r="1.5"/><circle cx="160" cy="80" r="1.5"/><circle cx="240" cy="80" r="1.5"/><circle cx="320" cy="80" r="1.5"/><circle cx="400" cy="80" r="1.5"/><circle cx="480" cy="80" r="1.5"/><circle cx="560" cy="80" r="1.5"/><circle cx="640" cy="80" r="1.5"/><circle cx="720" cy="80" r="1.5"/><circle cx="800" cy="80" r="1.5"/><circle cx="880" cy="80" r="1.5"/><circle cx="960" cy="80" r="1.5"/><circle cx="1040" cy="80" r="1.5"/><circle cx="1120" cy="80" r="1.5"/><circle cx="1200" cy="80" r="1.5"/>
+    <circle cx="80" cy="160" r="1.5"/><circle cx="160" cy="160" r="1.5"/><circle cx="240" cy="160" r="1.5"/><circle cx="320" cy="160" r="1.5"/><circle cx="400" cy="160" r="1.5"/><circle cx="480" cy="160" r="1.5"/><circle cx="560" cy="160" r="1.5"/><circle cx="640" cy="160" r="1.5"/><circle cx="720" cy="160" r="1.5"/><circle cx="800" cy="160" r="1.5"/><circle cx="880" cy="160" r="1.5"/><circle cx="960" cy="160" r="1.5"/><circle cx="1040" cy="160" r="1.5"/><circle cx="1120" cy="160" r="1.5"/><circle cx="1200" cy="160" r="1.5"/>
+    <circle cx="80" cy="240" r="1.5"/><circle cx="160" cy="240" r="1.5"/><circle cx="240" cy="240" r="1.5"/><circle cx="320" cy="240" r="1.5"/><circle cx="400" cy="240" r="1.5"/><circle cx="480" cy="240" r="1.5"/><circle cx="560" cy="240" r="1.5"/><circle cx="640" cy="240" r="1.5"/><circle cx="720" cy="240" r="1.5"/><circle cx="800" cy="240" r="1.5"/><circle cx="880" cy="240" r="1.5"/><circle cx="960" cy="240" r="1.5"/><circle cx="1040" cy="240" r="1.5"/><circle cx="1120" cy="240" r="1.5"/><circle cx="1200" cy="240" r="1.5"/>
+    <circle cx="80" cy="320" r="1.5"/><circle cx="160" cy="320" r="1.5"/><circle cx="240" cy="320" r="1.5"/><circle cx="320" cy="320" r="1.5"/><circle cx="400" cy="320" r="1.5"/><circle cx="480" cy="320" r="1.5"/><circle cx="560" cy="320" r="1.5"/><circle cx="640" cy="320" r="1.5"/><circle cx="720" cy="320" r="1.5"/><circle cx="800" cy="320" r="1.5"/><circle cx="880" cy="320" r="1.5"/><circle cx="960" cy="320" r="1.5"/><circle cx="1040" cy="320" r="1.5"/><circle cx="1120" cy="320" r="1.5"/><circle cx="1200" cy="320" r="1.5"/>
+    <circle cx="80" cy="400" r="1.5"/><circle cx="160" cy="400" r="1.5"/><circle cx="240" cy="400" r="1.5"/><circle cx="320" cy="400" r="1.5"/><circle cx="400" cy="400" r="1.5"/><circle cx="480" cy="400" r="1.5"/><circle cx="560" cy="400" r="1.5"/><circle cx="640" cy="400" r="1.5"/><circle cx="720" cy="400" r="1.5"/><circle cx="800" cy="400" r="1.5"/><circle cx="880" cy="400" r="1.5"/><circle cx="960" cy="400" r="1.5"/><circle cx="1040" cy="400" r="1.5"/><circle cx="1120" cy="400" r="1.5"/><circle cx="1200" cy="400" r="1.5"/>
+    <circle cx="80" cy="480" r="1.5"/><circle cx="160" cy="480" r="1.5"/><circle cx="240" cy="480" r="1.5"/><circle cx="320" cy="480" r="1.5"/><circle cx="400" cy="480" r="1.5"/><circle cx="480" cy="480" r="1.5"/><circle cx="560" cy="480" r="1.5"/><circle cx="640" cy="480" r="1.5"/><circle cx="720" cy="480" r="1.5"/><circle cx="800" cy="480" r="1.5"/><circle cx="880" cy="480" r="1.5"/><circle cx="960" cy="480" r="1.5"/><circle cx="1040" cy="480" r="1.5"/><circle cx="1120" cy="480" r="1.5"/><circle cx="1200" cy="480" r="1.5"/>
+    <circle cx="80" cy="560" r="1.5"/><circle cx="160" cy="560" r="1.5"/><circle cx="240" cy="560" r="1.5"/><circle cx="320" cy="560" r="1.5"/><circle cx="400" cy="560" r="1.5"/><circle cx="480" cy="560" r="1.5"/><circle cx="560" cy="560" r="1.5"/><circle cx="640" cy="560" r="1.5"/><circle cx="720" cy="560" r="1.5"/><circle cx="800" cy="560" r="1.5"/><circle cx="880" cy="560" r="1.5"/><circle cx="960" cy="560" r="1.5"/><circle cx="1040" cy="560" r="1.5"/><circle cx="1120" cy="560" r="1.5"/><circle cx="1200" cy="560" r="1.5"/>
+  </g>
+
+  <!-- Big Glowing Ambient Core in Background -->
+  <circle cx="640" cy="220" r="280" fill="url(#banner-core-glow)"/>
+
+  <!-- Central Visual Mark (Orbital Icon) -->
+  <g transform="translate(560, 110)">
+    <!-- Orbit 1 -->
+    <ellipse cx="80" cy="80" rx="95" ry="38" fill="none" stroke="url(#banner-orbit-1)" stroke-width="7" stroke-linecap="round" transform="rotate(-28 80 80)" filter="url(#banner-glow)"/>
+    <!-- Orbit 2 -->
+    <ellipse cx="80" cy="80" rx="95" ry="38" fill="none" stroke="url(#banner-orbit-2)" stroke-width="7" stroke-linecap="round" transform="rotate(38 80 80)" stroke-dasharray="170 36 80 25" filter="url(#banner-glow)"/>
+    
+    <!-- Satellites -->
+    <circle cx="145" cy="40" r="9" fill="#60A5FA" stroke="#0B0F17" stroke-width="2.5"/>
+    <circle cx="15" cy="120" r="9" fill="#34D399" stroke="#0B0F17" stroke-width="2.5"/>
+    <circle cx="28" cy="45" r="6" fill="#38BDF8"/>
+    
+    <!-- Core Node -->
+    <circle cx="80" cy="80" r="14" fill="#F8FAFC" stroke="#3B82F6" stroke-width="4"/>
+    <circle cx="80" cy="80" r="5" fill="#0B0F17"/>
+  </g>
+
+  <!-- Title & Branding Text -->
+  <g transform="translate(640, 340)">
+    <!-- Brand Title -->
+    <text x="0" y="0" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, sans-serif" font-size="64" font-weight="900" letter-spacing="-0.03em" fill="#F8FAFC">
+      agy<tspan fill="#38BDF8">swap</tspan>
+    </text>
+    
+    <!-- Subtitle / Value Proposition -->
+    <text x="0" y="42" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="20" font-weight="500" fill="#94A3B8">
+      Fast Multi-Account Switcher &amp; Session Manager for Google Antigravity CLI
+    </text>
+  </g>
+
+  <!-- Feature Metric Pills -->
+  <g transform="translate(190, 470)">
+    <!-- Pill 1: Switching Speed -->
+    <g transform="translate(0, 0)">
+      <rect width="200" height="54" rx="10" fill="#161F2E" stroke="#38BDF8" stroke-width="1.2"/>
+      <text x="100" y="24" text-anchor="middle" font-family="ui-monospace, monospace" font-size="11" font-weight="700" fill="#38BDF8" letter-spacing="0.08em">SWITCHING SPEED</text>
+      <text x="100" y="44" text-anchor="middle" font-family="-apple-system, sans-serif" font-size="15" font-weight="800" fill="#F8FAFC">~0.1s Fast Path</text>
+    </g>
+
+    <!-- Pill 2: Native Security -->
+    <g transform="translate(230, 0)">
+      <rect width="210" height="54" rx="10" fill="#142820" stroke="#34D399" stroke-width="1.2"/>
+      <text x="105" y="24" text-anchor="middle" font-family="ui-monospace, monospace" font-size="11" font-weight="700" fill="#34D399" letter-spacing="0.08em">NATIVE SECURITY</text>
+      <text x="105" y="44" text-anchor="middle" font-family="-apple-system, sans-serif" font-size="15" font-weight="800" fill="#F8FAFC">C API (0% Argv Leak)</text>
+    </g>
+
+    <!-- Pill 3: Dependencies -->
+    <g transform="translate(470, 0)">
+      <rect width="200" height="54" rx="10" fill="#1E293B" stroke="#475569" stroke-width="1.2"/>
+      <text x="100" y="24" text-anchor="middle" font-family="ui-monospace, monospace" font-size="11" font-weight="700" fill="#94A3B8" letter-spacing="0.08em">DEPENDENCIES</text>
+      <text x="100" y="44" text-anchor="middle" font-family="-apple-system, sans-serif" font-size="15" font-weight="800" fill="#F8FAFC">0 External Deps</text>
+    </g>
+
+    <!-- Pill 4: File Isolation -->
+    <g transform="translate(700, 0)">
+      <rect width="200" height="54" rx="10" fill="#1E293B" stroke="#475569" stroke-width="1.2"/>
+      <text x="100" y="24" text-anchor="middle" font-family="ui-monospace, monospace" font-size="11" font-weight="700" fill="#94A3B8" letter-spacing="0.08em">FILE ISOLATION</text>
+      <text x="100" y="44" text-anchor="middle" font-family="-apple-system, sans-serif" font-size="15" font-weight="800" fill="#F8FAFC">0600 / 0700 flock</text>
+    </g>
+  </g>
+</svg>
