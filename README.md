@@ -219,6 +219,14 @@ agyswap import ~/Desktop/agyswap-backup.json
 
 `agyswap` is an independent open-source developer tool and is **not** affiliated with, endorsed by, sponsored by, or supported by Google LLC. "Antigravity", "Gemini", and "Google" are trademarks or registered trademarks of Google LLC. This utility is intended strictly for managing multiple legitimately owned developer profiles.
 
+## ⭐ Support & Community
+
+If `agyswap` saves you time and makes your Antigravity CLI workflow smoother, please consider giving it a **Star (⭐)** on GitHub! It helps more developers discover the project and accelerates promotion to Homebrew core.
+
+- 🐛 **Found a bug?** [Open an issue](https://github.com/g1mn/agyswap/issues)
+- 💡 **Have a feature request?** [Submit a PR or Feature Request](https://github.com/g1mn/agyswap/issues/new)
+- 📢 **Share with peers:** Share `agyswap` with fellow developers using Antigravity!
+
 ---
 
 ## 📄 License
