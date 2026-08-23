@@ -191,39 +191,14 @@ class KeychainManager:
         b64_str = base64.b64encode(json_str.encode("utf-8")).decode("utf-8")
         raw_password = f"{KEYRING_PREFIX}{b64_str}"
 
-        # 1. Native C API (Prevents command line argv exposure - CWE-214 mitigation)
-        if _sec_lib:
-            try:
-                s_bytes = KEYCHAIN_SERVICE.encode("utf-8")
-                a_bytes = KEYCHAIN_ACCOUNT.encode("utf-8")
-                p_bytes = raw_password.encode("utf-8")
-                pw_len = ctypes.c_uint32()
-                pw_data = ctypes.c_void_p()
-                item_ref = ctypes.c_void_p()
+        # Delete existing restrictive item first to clear application-bound ACLs
+        subprocess.run(
+            ["security", "delete-generic-password", "-a", KEYCHAIN_ACCOUNT, "-s", KEYCHAIN_SERVICE],
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+        )
 
-                status = _sec_lib.SecKeychainFindGenericPassword(
-                    None, len(s_bytes), s_bytes, len(a_bytes), a_bytes,
-                    ctypes.byref(pw_len), ctypes.byref(pw_data), ctypes.byref(item_ref)
-                )
-                if status == 0 and item_ref.value:
-                    if pw_data.value:
-                        _sec_lib.SecKeychainItemFreeContent(None, pw_data)
-                    mod_status = _sec_lib.SecKeychainItemModifyAttributesAndData(
-                        item_ref, None, len(p_bytes), p_bytes
-                    )
-                    if mod_status == 0:
-                        return
-                else:
-                    add_status = _sec_lib.SecKeychainAddGenericPassword(
-                        None, len(s_bytes), s_bytes, len(a_bytes), a_bytes,
-                        len(p_bytes), p_bytes, None
-                    )
-                    if add_status == 0:
-                        return
-            except Exception:
-                pass
-
-        # 2. CLI Fallback with -A (Allow any application to access without prompt)
+        # Create fresh generic-password with -A (allow any app) and trusted binaries
+        agy_bin = shutil.which("agy") or "/opt/homebrew/bin/agy"
         cmd = [
             "security", "add-generic-password",
             "-a", KEYCHAIN_ACCOUNT,
@@ -232,6 +207,9 @@ class KeychainManager:
             "-U",
             "-A"
         ]
+        if Path(agy_bin).exists():
+            cmd.extend(["-T", agy_bin, "-T", "/usr/bin/security"])
+
         res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         if res.returncode != 0:
             raise RuntimeError(f"Keychain update failed: {res.stderr.strip()}")
