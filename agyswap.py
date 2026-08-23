@@ -223,13 +223,14 @@ class KeychainManager:
             except Exception:
                 pass
 
-        # 2. CLI Fallback
+        # 2. CLI Fallback with -A (Allow any application to access without prompt)
         cmd = [
             "security", "add-generic-password",
             "-a", KEYCHAIN_ACCOUNT,
             "-s", KEYCHAIN_SERVICE,
             "-w", raw_password,
-            "-U"
+            "-U",
+            "-A"
         ]
         res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         if res.returncode != 0:
