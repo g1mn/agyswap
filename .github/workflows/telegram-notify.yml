@@ -1,0 +1,76 @@
+name: 📢 Telegram Notifications
+
+on:
+  watch:
+    types: [started]
+  fork:
+  issues:
+    types: [opened, closed, reopened, labeled]
+  pull_request:
+    types: [opened, closed, reopened]
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      test_message:
+        description: 'Test notification message'
+        required: false
+        default: 'Hello! Telegram notification test from agyswap.'
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Notification to Telegram
+        env:
+          TG_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TG_CHAT: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          EVENT_NAME="${{ github.event_name }}"
+          ACTOR="${{ github.actor }}"
+          REPO="${{ github.repository }}"
+          REPO_URL="https://github.com/${REPO}"
+          SENDER_URL="https://github.com/${ACTOR}"
+
+          MSG=""
+
+          if [ "$EVENT_NAME" = "watch" ]; then
+            MSG="⭐ <b>New Star on agyswap!</b>%0A%0A👤 <b>User:</b> <a href='${SENDER_URL}'>@${ACTOR}</a>%0A📦 <b>Repo:</b> <a href='${REPO_URL}'>${REPO}</a>"
+          elif [ "$EVENT_NAME" = "fork" ]; then
+            FORK_URL="${{ github.event.forkee.html_url }}"
+            MSG="🍴 <b>New Fork Created!</b>%0A%0A👤 <b>User:</b> <a href='${SENDER_URL}'>@${ACTOR}</a>%0A📦 <b>Fork:</b> <a href='${FORK_URL}'>${{ github.event.forkee.full_name }}</a>"
+          elif [ "$EVENT_NAME" = "issues" ]; then
+            ACTION="${{ github.event.action }}"
+            ISSUE_NUM="${{ github.event.issue.number }}"
+            ISSUE_TITLE="${{ github.event.issue.title }}"
+            ISSUE_URL="${{ github.event.issue.html_url }}"
+            MSG="🚨 <b>Issue [${ACTION^^}]: #${ISSUE_NUM}</b>%0A%0A📌 <b>Title:</b> <a href='${ISSUE_URL}'>${ISSUE_TITLE}</a>%0A👤 <b>Author:</b> <a href='${SENDER_URL}'>@${ACTOR}</a>%0A📦 <b>Repo:</b> <a href='${REPO_URL}'>${REPO}</a>"
+          elif [ "$EVENT_NAME" = "pull_request" ]; then
+            ACTION="${{ github.event.action }}"
+            PR_NUM="${{ github.event.pull_request.number }}"
+            PR_TITLE="${{ github.event.pull_request.title }}"
+            PR_URL="${{ github.event.pull_request.html_url }}"
+            IS_MERGED="${{ github.event.pull_request.merged }}"
+            
+            if [ "$ACTION" = "closed" ] && [ "$IS_MERGED" = "true" ]; then
+              ACTION="MERGED 🎉"
+            fi
+            
+            MSG="🔀 <b>Pull Request [${ACTION}]: #${PR_NUM}</b>%0A%0A📌 <b>Title:</b> <a href='${PR_URL}'>${PR_TITLE}</a>%0A👤 <b>Author:</b> <a href='${SENDER_URL}'>@${ACTOR}</a>%0A📦 <b>Repo:</b> <a href='${REPO_URL}'>${REPO}</a>"
+          elif [ "$EVENT_NAME" = "release" ]; then
+            TAG="${{ github.event.release.tag_name }}"
+            REL_NAME="${{ github.event.release.name }}"
+            REL_URL="${{ github.event.release.html_url }}"
+            MSG="🚀 <b>New Release Published!</b>%0A%0A🏷️ <b>Tag:</b> <a href='${REL_URL}'>${TAG} (${REL_NAME})</a>%0A👤 <b>By:</b> <a href='${SENDER_URL}'>@${ACTOR}</a>%0A📦 <b>Repo:</b> <a href='${REPO_URL}'>${REPO}</a>"
+          elif [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            CUSTOM_MSG="${{ github.event.inputs.test_message }}"
+            MSG="🔔 <b>agyswap Telegram Test</b>%0A%0A💬 ${CUSTOM_MSG}%0A👤 Triggered by: @${ACTOR}"
+          else
+            MSG="📢 <b>agyswap Event:</b> ${EVENT_NAME}%0A👤 By: @${ACTOR}%0A📦 <a href='${REPO_URL}'>${REPO}</a>"
+          fi
+
+          curl -sS -X POST "https://api.telegram.org/bot${TG_TOKEN}/sendMessage" \
+            -d "chat_id=${TG_CHAT}" \
+            -d "parse_mode=HTML" \
+            -d "disable_web_page_preview=true" \
+            -d "text=${MSG}"
