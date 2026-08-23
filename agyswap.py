@@ -53,7 +53,7 @@ if sys.platform != "darwin":
     sys.exit(1)
 
 # ── Version ──────────────────────────────────────────────────────────────────
-VERSION = "0.1.0"
+VERSION = "0.2.0"
 
 # ── Constants & Paths ────────────────────────────────────────────────────────
 BASE_DIR = Path.home() / ".agy-swap"

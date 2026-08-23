@@ -57,7 +57,7 @@
     <rect width="320" height="250" class="card-accent"/>
     <path d="M 0 10 Q 0 0 10 0 L 310 0 Q 320 0 320 10 L 320 34 L 0 34 Z" class="header-tint"/>
     <line x1="0" y1="34" x2="320" y2="34" stroke="#30363d" stroke-width="1"/>
-    <text x="16" y="23" class="title-accent">🔄 agyswap Engine Core (v0.1.0)</text>
+    <text x="16" y="23" class="title-accent">🔄 agyswap Engine Core (v0.2.0)</text>
     
     <text x="16" y="60" class="text-green">⚡ Native C API Binding</text>
     <text x="30" y="78" class="text">SecKeychain APIs (0% argv leak)</text>
