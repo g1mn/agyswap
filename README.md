@@ -1,6 +1,6 @@
 <p align="center">
   <a href="https://github.com/g1mn/agyswap">
-    <img src="assets/banner.svg" alt="agyswap Banner" width="100%">
+    <img src="https://raw.githubusercontent.com/g1mn/agyswap/main/assets/banner.svg" alt="agyswap Banner" width="100%">
   </a>
 </p>
 

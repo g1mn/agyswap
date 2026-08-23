@@ -359,7 +359,34 @@
 <div class="wrap">
   <header class="topbar">
     <div style="display:flex;align-items:center;gap:14px">
-      <img src="assets/logo-icon.svg" alt="agyswap logo" width="44" height="44" style="border-radius:10px;flex-shrink:0;box-shadow:0 2px 8px rgba(0,0,0,0.2)">
+      <svg width="44" height="44" viewBox="0 0 128 128" style="border-radius:10px;flex-shrink:0;box-shadow:0 2px 8px rgba(0,0,0,0.2)" role="img" aria-label="agyswap logo">
+        <defs>
+          <linearGradient id="hdr-orb-1" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#38BDF8"/>
+            <stop offset="50%" stop-color="#3B82F6"/>
+            <stop offset="100%" stop-color="#1D4ED8"/>
+          </linearGradient>
+          <linearGradient id="hdr-orb-2" x1="0%" y1="100%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="#34D399"/>
+            <stop offset="50%" stop-color="#10B981"/>
+            <stop offset="100%" stop-color="#059669"/>
+          </linearGradient>
+          <radialGradient id="hdr-core" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#60A5FA" stop-opacity="0.9"/>
+            <stop offset="60%" stop-color="#3B82F6" stop-opacity="0.3"/>
+            <stop offset="100%" stop-color="#1E3A8A" stop-opacity="0"/>
+          </radialGradient>
+        </defs>
+        <rect width="128" height="128" rx="28" fill="#0D1117" stroke="#30363D" stroke-width="2"/>
+        <circle cx="64" cy="64" r="32" fill="url(#hdr-core)"/>
+        <ellipse cx="64" cy="64" rx="42" ry="18" fill="none" stroke="url(#hdr-orb-1)" stroke-width="5" stroke-linecap="round" transform="rotate(-30 64 64)"/>
+        <ellipse cx="64" cy="64" rx="42" ry="18" fill="none" stroke="url(#hdr-orb-2)" stroke-width="5" stroke-linecap="round" transform="rotate(35 64 64)" stroke-dasharray="80 16 35 12"/>
+        <circle cx="95" cy="46" r="5.5" fill="#60A5FA" stroke="#0D1117" stroke-width="1.5"/>
+        <circle cx="33" cy="82" r="5.5" fill="#34D399" stroke="#0D1117" stroke-width="1.5"/>
+        <circle cx="38" cy="42" r="3.8" fill="#38BDF8"/>
+        <circle cx="64" cy="64" r="8" fill="#F8FAFC" stroke="#3B82F6" stroke-width="2.5"/>
+        <circle cx="64" cy="64" r="3" fill="#0D1117"/>
+      </svg>
       <div>
         <div class="eyebrow">agyswap • Architecture &amp; Lifecycle Map</div>
         <h1>agyswap <span class="sub">— Antigravity CLI Account Switcher</span></h1>
