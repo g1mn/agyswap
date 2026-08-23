@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "agyswap"
-version = "0.2.0"
+version = "0.3.0"
 description = "Antigravity (agy) CLI Multi-Account Switcher & Session Manager"
 readme = "README.md"
 authors = [

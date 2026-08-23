@@ -390,7 +390,7 @@
       <div>
         <div class="eyebrow">agyswap • Architecture &amp; Lifecycle Map</div>
         <h1>agyswap <span class="sub">— Antigravity CLI Account Switcher</span></h1>
-        <p class="lede">Visual topology for native macOS Keychain integration, zero-dependency process coordination, and POSIX 0600 security isolation.</p>
+        <p class="lede">Per-session account isolation · Zero-interaction token rotation · One-command session resume. Powered by native macOS Keychain with zero external dependencies.</p>
       </div>
     </div>
     <button id="themeBtn" style="padding:7px 14px;background:var(--surface);border:1px solid var(--line);border-radius:6px;cursor:pointer;color:var(--ink);font-family:var(--mono);font-size:12px;font-weight:600">🌓 Theme</button>
@@ -402,6 +402,16 @@
       <div class="k">⚡ Switching Speed</div>
       <div class="v" style="color:var(--accent)">~0.1s</div>
       <div class="n">Instant profile swap</div>
+    </div>
+    <div class="tile">
+      <div class="k">🪟 Session Isolation</div>
+      <div class="v" style="color:var(--accent)">Per-Window</div>
+      <div class="n">Each terminal keeps its own account</div>
+    </div>
+    <div class="tile">
+      <div class="k">🔄 Token Rotation</div>
+      <div class="v" style="color:var(--ok)">No Browser</div>
+      <div class="n">Background OAuth refresh for all slots</div>
     </div>
     <div class="tile">
       <div class="k">🔐 Native Security</div>
@@ -498,7 +508,7 @@
               <rect class="node-bg" width="320" height="250" rx="10" fill="var(--surface)" stroke="var(--accent)" stroke-width="2"/>
               <path class="node-header" d="M 0 10 Q 0 0 10 0 L 310 0 Q 320 0 320 10 L 320 34 L 0 34 Z" fill="var(--accent-tint)"/>
               <line class="node-header" x1="0" y1="34" x2="320" y2="34" stroke="var(--line)" stroke-width="1"/>
-              <text x="16" y="23" font-size="13.5" font-weight="750" fill="var(--accent)">🔄 agyswap Engine Core (v0.2.0)</text>
+              <text x="16" y="23" font-size="13.5" font-weight="750" fill="var(--accent)">🔄 agyswap Engine Core (v0.3.0)</text>
               
               <text x="16" y="60" font-size="11.5" font-weight="650" fill="var(--ok)">⚡ Native C API Binding</text>
               <text x="30" y="78" font-size="11" font-family="var(--mono)" fill="var(--muted)">SecKeychain APIs (0% argv leak)</text>
@@ -641,8 +651,8 @@ $ agyswap switch 3
             <div class="desc">Displays account slots with tree-style token validity view, active session indicators, and sync timestamps.</div>
           </div>
           <div class="cmd-card">
-            <div class="sig">agyswap &lt;slot|alias&gt;</div>
-            <div class="desc">Quick-switches to target profile in ~0.1s. Supports slot numbers (#1, #2), emails, or aliases.</div>
+            <div class="sig">agyswap &lt;slot&gt; [-r|-n] [-y]</div>
+            <div class="desc">Quick-switch profile. <code>-r</code>: resume last session (agy -c). <code>-n</code>: launch fresh session. <code>-y</code>: pass --dangerously-skip-permissions to agy for fully automated no-prompt workflows.</div>
           </div>
           <div class="cmd-card">
             <div class="sig">agyswap add [alias]</div>
@@ -657,8 +667,8 @@ $ agyswap switch 3
             <div class="desc">Audits and auto-corrects filesystem permissions (0700/0600) and verifies Keychain integrity.</div>
           </div>
           <div class="cmd-card">
-            <div class="sig">agyswap rotate [slot]</div>
-            <div class="desc">Triggers token renewal for expired or soon-expiring OAuth profiles using refresh tokens.</div>
+            <div class="sig">agyswap rotate [--all | slot]</div>
+            <div class="desc">Background OAuth token refresh. <code>--all</code> rotates every slot simultaneously — no browser interaction required.</div>
           </div>
           <div class="cmd-card">
             <div class="sig">agyswap export [file]</div>
