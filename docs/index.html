@@ -241,10 +241,13 @@
     margin: 0 auto;
   }
   .svg-node { transition: all 0.25s ease; cursor: pointer; }
-  .svg-node:hover rect { stroke: var(--accent); stroke-width: 2.5px; }
+  .svg-node:hover > rect:first-child,
+  .svg-node:hover > .node-bg { stroke: var(--accent); stroke-width: 2.5px; }
   .svg-link { transition: all 0.25s ease; }
   .dimmed { opacity: 0.2; }
-  .highlighted rect { stroke: var(--accent) !important; stroke-width: 2.5px !important; }
+  .highlighted > rect:first-child,
+  .highlighted > .node-bg { stroke: var(--accent) !important; stroke-width: 2.5px !important; }
+  .node-header { stroke: none !important; pointer-events: none; }
 
   /* Tables */
   table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 12px 0; }
@@ -440,7 +443,7 @@
 
             <!-- Node 1: Developer Terminal -->
             <g class="svg-node" id="node-cli" transform="translate(30, 150)">
-              <rect width="200" height="170" rx="8" fill="var(--surface)" stroke="var(--line)" stroke-width="1.5"/>
+              <rect class="node-bg" width="200" height="170" rx="8" fill="var(--surface)" stroke="var(--line)" stroke-width="1.5"/>
               <text x="16" y="30" font-size="13" font-weight="700" fill="var(--ink)">💻 Developer / Shell</text>
               <text x="16" y="56" font-size="11" font-family="var(--mono)" fill="var(--accent)">$ agyswap 2</text>
               <text x="16" y="78" font-size="11" font-family="var(--mono)" fill="var(--accent)">$ agyswap switch work</text>
@@ -451,9 +454,9 @@
 
             <!-- Node 2: agyswap Engine Core -->
             <g class="svg-node" id="node-core" transform="translate(290, 110)">
-              <rect width="320" height="250" rx="10" fill="var(--surface)" stroke="var(--accent)" stroke-width="2"/>
-              <rect width="320" height="34" rx="10" fill="var(--accent-tint)"/>
-              <rect x="0" y="24" width="320" height="10" fill="var(--accent-tint)"/>
+              <rect class="node-bg" width="320" height="250" rx="10" fill="var(--surface)" stroke="var(--accent)" stroke-width="2"/>
+              <path class="node-header" d="M 0 10 Q 0 0 10 0 L 310 0 Q 320 0 320 10 L 320 34 L 0 34 Z" fill="var(--accent-tint)"/>
+              <line class="node-header" x1="0" y1="34" x2="320" y2="34" stroke="var(--line)" stroke-width="1"/>
               <text x="16" y="23" font-size="13.5" font-weight="750" fill="var(--accent)">🔄 agyswap Engine Core (v0.1.0)</text>
               
               <text x="16" y="60" font-size="11.5" font-weight="650" fill="var(--ok)">⚡ Native C API Binding</text>
@@ -473,7 +476,7 @@
 
             <!-- Node 3: macOS Keychain -->
             <g class="svg-node" id="node-keychain" transform="translate(670, 30)">
-              <rect width="260" height="90" rx="8" fill="var(--ok-tint)" stroke="var(--ok)" stroke-width="1.5"/>
+              <rect class="node-bg" width="260" height="90" rx="8" fill="var(--ok-tint)" stroke="var(--ok)" stroke-width="1.5"/>
               <text x="16" y="28" font-size="13" font-weight="700" fill="var(--ok)">🔐 macOS Keychain</text>
               <text x="16" y="50" font-size="11" font-family="var(--mono)" fill="var(--ink)">service: gemini / acct: antigravity</text>
               <text x="16" y="70" font-size="11" font-family="var(--mono)" fill="var(--muted)">go-keyring-base64:&lt;JSON&gt;</text>
@@ -481,7 +484,7 @@
 
             <!-- Node 4: Antigravity CLI -->
             <g class="svg-node" id="node-agy" transform="translate(670, 150)">
-              <rect width="260" height="90" rx="8" fill="var(--surface)" stroke="var(--line)" stroke-width="1.5"/>
+              <rect class="node-bg" width="260" height="90" rx="8" fill="var(--surface)" stroke="var(--line)" stroke-width="1.5"/>
               <text x="16" y="28" font-size="13" font-weight="700" fill="var(--ink)">🤖 Google Antigravity (agy)</text>
               <text x="16" y="50" font-size="11" font-family="var(--mono)" fill="var(--ink)">Gemini / Code Execution Agent</text>
               <text x="16" y="70" font-size="11" font-family="var(--mono)" fill="var(--muted)">~/.gemini/antigravity-cli/</text>
@@ -489,7 +492,7 @@
 
             <!-- Node 5: Slot Storage -->
             <g class="svg-node" id="node-storage" transform="translate(670, 270)">
-              <rect width="260" height="95" rx="8" fill="var(--surface)" stroke="var(--line)" stroke-width="1.5"/>
+              <rect class="node-bg" width="260" height="95" rx="8" fill="var(--surface)" stroke="var(--line)" stroke-width="1.5"/>
               <text x="16" y="26" font-size="13" font-weight="700" fill="var(--ink)">📁 Local Slot Store (0600)</text>
               <text x="16" y="48" font-size="11" font-family="var(--mono)" fill="var(--ink)">~/.agy-swap/slots/slot-*.json</text>
               <text x="16" y="66" font-size="11" font-family="var(--mono)" fill="var(--muted)">config.json + rolling backups</text>
@@ -498,7 +501,7 @@
 
             <!-- Node 6: Google UserInfo API -->
             <g class="svg-node" id="node-google" transform="translate(670, 395)">
-              <rect width="260" height="60" rx="8" fill="var(--accent-tint)" stroke="var(--accent)" stroke-width="1.2"/>
+              <rect class="node-bg" width="260" height="60" rx="8" fill="var(--accent-tint)" stroke="var(--accent)" stroke-width="1.2"/>
               <text x="16" y="24" font-size="12.5" font-weight="700" fill="var(--accent)">🌐 Google OAuth Endpoints</text>
               <text x="16" y="44" font-size="11" font-family="var(--mono)" fill="var(--muted)">oauth2/v3/userinfo &amp; token</text>
             </g>
