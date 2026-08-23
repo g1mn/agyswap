@@ -574,7 +574,10 @@ def cmd_list(args):
         except Exception:
             pass
 
-        is_active = (slot == active_slot) or (curr_token_hash and curr_token_hash == slot_token_hash)
+        if curr_token_hash:
+            is_active = (slot_token_hash == curr_token_hash)
+        else:
+            is_active = (slot == active_slot)
         active_str = f" {green(bold('(active)'))}" if is_active else ""
 
         exp_time, exp_rel, is_expired, is_soon = format_expiry_detail(exp_raw)
