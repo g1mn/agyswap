@@ -3,21 +3,26 @@
     <style>
       .bg { fill: #0d1117; }
       .card { fill: #161b22; stroke: #30363d; stroke-width: 1.5; rx: 8; }
-      .card-accent { fill: #161b22; stroke: #58a6ff; stroke-width: 2; rx: 8; }
+      .card-accent { fill: #161b22; stroke: #58a6ff; stroke-width: 2; rx: 10; }
       .card-green { fill: #161b22; stroke: #3fb950; stroke-width: 1.5; rx: 8; }
-      .card-orange { fill: #161b22; stroke: #d29922; stroke-width: 1.5; rx: 8; }
-      .title { fill: #f0f6fc; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 14px; font-weight: 700; }
+      .card-blue { fill: #161b22; stroke: #388bfd; stroke-width: 1.2; rx: 8; }
+      .title { fill: #f0f6fc; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 13.5px; font-weight: 700; }
+      .title-accent { fill: #58a6ff; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 14px; font-weight: 750; }
+      .title-green { fill: #3fb950; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 13px; font-weight: 700; }
       .text { fill: #8b949e; font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace; font-size: 11px; }
       .text-code { fill: #79c0ff; font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace; font-size: 11px; }
-      .text-green { fill: #56d364; font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace; font-size: 11px; }
-      .text-orange { fill: #e3b341; font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace; font-size: 11px; }
-      .line { stroke: #30363d; stroke-width: 1.5; fill: none; }
-      .line-active { stroke: #58a6ff; stroke-width: 2; fill: none; stroke-dasharray: 4; }
-      .line-green { stroke: #3fb950; stroke-width: 1.5; fill: none; }
+      .text-green { fill: #56d364; font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace; font-size: 11.5px; font-weight: 600; }
+      .text-ink { fill: #e6edf3; font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace; font-size: 11.5px; font-weight: 600; }
+      .line-accent { stroke: #58a6ff; stroke-width: 2.5; fill: none; }
+      .line-green { stroke: #3fb950; stroke-width: 2; fill: none; }
+      .line-dashed { stroke: #8b949e; stroke-width: 1.8; fill: none; stroke-dasharray: 4 4; }
+      .line-muted { stroke: #8b949e; stroke-width: 2; fill: none; }
+      .line-google { stroke: #58a6ff; stroke-width: 1.5; fill: none; stroke-dasharray: 3 3; }
       .badge { fill: #21262d; stroke: #30363d; rx: 4; }
-      .badge-text { fill: #c9d1d9; font-family: -apple-system, sans-serif; font-size: 10px; font-weight: 600; }
+      .badge-text { fill: #8b949e; font-family: ui-monospace, monospace; font-size: 10px; }
+      .header-tint { fill: rgba(88, 166, 255, 0.12); }
     </style>
-    <marker id="arrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+    <marker id="arrow-accent" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto">
       <path d="M 0 1 L 8 5 L 0 9 z" fill="#58a6ff" />
     </marker>
     <marker id="arrow-green" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto">
@@ -32,80 +37,88 @@
   <rect width="960" height="480" class="bg" rx="10"/>
 
   <!-- Top Header Title -->
-  <text x="32" y="42" fill="#f0f6fc" font-family="-apple-system, sans-serif" font-size="16px" font-weight="700">agyswap Architecture &amp; Data Flow Topology</text>
-  <text x="32" y="62" fill="#8b949e" font-family="-apple-system, sans-serif" font-size="12px">Native C API Keychain Binding • POSIX 0600 File Isolation • Atomic Process Locking</text>
+  <text x="32" y="38" fill="#58a6ff" font-family="ui-monospace, monospace" font-size="11px" font-weight="700" letter-spacing="0.1em">SYSTEM TOPOLOGY • V0.1.0</text>
+  <text x="32" y="58" fill="#f0f6fc" font-family="-apple-system, sans-serif" font-size="16px" font-weight="700">agyswap Architecture &amp; Data Flow Topology</text>
+  <text x="32" y="78" fill="#8b949e" font-family="-apple-system, sans-serif" font-size="12px">Native C API Keychain Binding • POSIX 0600 File Isolation • Atomic Concurrency Locking</text>
 
   <!-- Node 1: Developer Terminal -->
-  <g transform="translate(32, 110)">
-    <rect width="200" height="150" class="card"/>
-    <text x="16" y="28" class="title">💻 Developer / CLI</text>
-    <text x="16" y="52" class="text-code">$ agyswap switch work</text>
-    <text x="16" y="72" class="text-code">$ agyswap health</text>
-    <text x="16" y="92" class="text-code">$ agyswap audit</text>
-    <text x="16" y="112" class="text-code">$ agyswap viz --open</text>
-    <rect x="16" y="126" width="168" height="14" class="badge"/>
-    <text x="22" y="137" class="badge-text">Terminal / Shell (zsh, bash, fish)</text>
+  <g transform="translate(30, 140)">
+    <rect width="200" height="170" class="card"/>
+    <text x="16" y="30" class="title">💻 Developer / Shell</text>
+    <text x="16" y="56" class="text-code">$ agyswap 2</text>
+    <text x="16" y="78" class="text-code">$ agyswap switch work</text>
+    <text x="16" y="100" class="text">$ agyswap health</text>
+    <text x="16" y="122" class="text">$ agyswap audit</text>
+    <text x="16" y="150" class="badge-text">zsh · bash · fish</text>
   </g>
 
   <!-- Node 2: agyswap Engine Core -->
-  <g transform="translate(290, 95)">
+  <g transform="translate(290, 100)">
     <rect width="320" height="250" class="card-accent"/>
-    <path d="M 290 95 L 610 95 L 610 130 L 290 130 Z" fill="#1f6feb" fill-opacity="0.15"/>
-    <text x="16" y="26" fill="#58a6ff" font-family="-apple-system, sans-serif" font-size="14px" font-weight="700">🔄 agyswap Engine Core (v0.1.0)</text>
+    <path d="M 0 10 Q 0 0 10 0 L 310 0 Q 320 0 320 10 L 320 34 L 0 34 Z" class="header-tint"/>
+    <line x1="0" y1="34" x2="320" y2="34" stroke="#30363d" stroke-width="1"/>
+    <text x="16" y="23" class="title-accent">🔄 agyswap Engine Core (v0.1.0)</text>
     
-    <text x="16" y="56" class="text-green">⚡ Security.framework (Native C API)</text>
-    <text x="30" y="72" class="text">Direct SecKeychain APIs (0% argv leak)</text>
+    <text x="16" y="60" class="text-green">⚡ Native C API Binding</text>
+    <text x="30" y="78" class="text">SecKeychain APIs (0% argv leak)</text>
     
-    <text x="16" y="96" class="text-green">🔒 StorageManager &amp; File Lock</text>
-    <text x="30" y="112" class="text">fcntl.flock + umask safe (mode 0600)</text>
+    <text x="16" y="106" class="text-green">🔒 StorageManager &amp; File Lock</text>
+    <text x="30" y="124" class="text">fcntl.flock + Mode 0600 / 0700</text>
     
-    <text x="16" y="136" class="text-green">🛡️ Expiry Guard &amp; Health Engine</text>
-    <text x="30" y="152" class="text">Blocks expired tokens (--force override)</text>
+    <text x="16" y="152" class="text-ink">🚨 Expired Token Guard &amp; Health</text>
+    <text x="30" y="170" class="text">30-min soon warning + --force</text>
+    
+    <text x="16" y="198" class="text-ink">🌐 Google UserInfo &amp; JWT Claims</text>
+    <text x="30" y="216" class="text">Offline parsing + Bearer API</text>
 
-    <text x="16" y="176" class="text-green">👤 Google UserInfo Profiler</text>
-    <text x="30" y="192" class="text">Offline JWT decoding + HTTPS fallback</text>
-
-    <rect x="16" y="214" width="288" height="20" class="badge"/>
-    <text x="24" y="228" class="badge-text">Zero External Dependencies • Python 3.8+ Standard Library</text>
+    <text x="16" y="244" class="badge-text">Zero Dependencies · Pure Python 3</text>
   </g>
 
   <!-- Node 3: macOS Keychain -->
-  <g transform="translate(670, 75)">
-    <rect width="258" height="110" class="card-green"/>
-    <text x="16" y="28" class="title">🔐 macOS Keychain</text>
-    <text x="16" y="52" class="text">Service:  gemini</text>
-    <text x="16" y="70" class="text">Account:  antigravity</text>
-    <text x="16" y="88" class="text-green">Payload:  go-keyring-base64:{}</text>
+  <g transform="translate(670, 30)">
+    <rect width="260" height="90" class="card" stroke="#3fb950"/>
+    <text x="16" y="28" class="title-green">🔐 macOS Keychain</text>
+    <text x="16" y="50" class="text" fill="#e6edf3">service: gemini / acct: antigravity</text>
+    <text x="16" y="70" class="text">go-keyring-base64:&lt;JSON&gt;</text>
   </g>
 
-  <!-- Node 4: Local Storage ~/.agy-swap/ -->
-  <g transform="translate(670, 215)">
-    <rect width="258" height="130" class="card-orange"/>
-    <text x="16" y="28" class="title">📁 Storage (~/.agy-swap/)</text>
-    <text x="16" y="52" class="text-orange">• config.json         [0600]</text>
-    <text x="16" y="70" class="text-orange">• .agyswap.lock       [flock]</text>
-    <text x="16" y="88" class="text-orange">• slots/slot-*.json   [0600]</text>
-    <text x="16" y="106" class="text-orange">• backup/config-*.json[0600]</text>
+  <!-- Node 4: Antigravity CLI -->
+  <g transform="translate(670, 145)">
+    <rect width="260" height="90" class="card"/>
+    <text x="16" y="28" class="title">🤖 Google Antigravity (agy)</text>
+    <text x="16" y="50" class="text" fill="#e6edf3">Gemini / Code Execution Agent</text>
+    <text x="16" y="70" class="text">~/.gemini/antigravity-cli/</text>
   </g>
 
-  <!-- Node 5: Google OAuth Servers (External) -->
-  <g transform="translate(290, 385)">
-    <rect width="320" height="70" class="card"/>
-    <text x="16" y="26" class="title">🌐 Google OAuth Endpoints</text>
-    <text x="16" y="46" class="text">GET  /oauth2/v3/userinfo  (Read-only profile)</text>
-    <text x="16" y="60" class="text">POST /oauth2/v4/token     (Refresh token renewal)</text>
+  <!-- Node 5: Slot Storage -->
+  <g transform="translate(670, 260)">
+    <rect width="260" height="95" class="card"/>
+    <text x="16" y="26" class="title">📁 Local Slot Store (0600)</text>
+    <text x="16" y="48" class="text" fill="#e6edf3">~/.agy-swap/slots/slot-*.json</text>
+    <text x="16" y="66" class="text">config.json + rolling backups</text>
+    <text x="16" y="84" class="badge-text">.agyswap.lock (fcntl barrier)</text>
   </g>
 
-  <!-- Connecting Arrows -->
-  <!-- CLI to Engine -->
-  <path d="M 232 185 L 288 185" class="line-active" marker-end="url(#arrow)"/>
+  <!-- Node 6: Google UserInfo API -->
+  <g transform="translate(670, 380)">
+    <rect width="260" height="60" class="card-blue"/>
+    <text x="16" y="24" class="title" fill="#58a6ff">🌐 Google OAuth Endpoints</text>
+    <text x="16" y="44" class="text">oauth2/v3/userinfo &amp; token</text>
+  </g>
+
+  <!-- Connecting Links -->
+  <!-- CLI to Core -->
+  <path d="M 230 225 L 290 225" class="line-accent" marker-end="url(#arrow-accent)"/>
   
-  <!-- Engine to Keychain -->
-  <path d="M 610 135 L 668 135" class="line-active" marker-end="url(#arrow)"/>
-
-  <!-- Engine to Storage -->
-  <path d="M 610 270 L 668 270" class="line-green" marker-end="url(#arrow-green)"/>
-
-  <!-- Engine to Google -->
-  <path d="M 450 345 L 450 383" class="line" marker-end="url(#arrow-muted)"/>
+  <!-- Core to Keychain -->
+  <path d="M 610 150 L 670 75" class="line-green" marker-end="url(#arrow-green)"/>
+  
+  <!-- Keychain to agy (read) -->
+  <path d="M 800 120 L 800 145" class="line-dashed" marker-end="url(#arrow-muted)"/>
+  
+  <!-- Core to Storage -->
+  <path d="M 610 260 L 670 300" class="line-muted" marker-end="url(#arrow-muted)"/>
+  
+  <!-- Core to Google -->
+  <path d="M 580 350 L 670 400" class="line-google" marker-end="url(#arrow-accent)"/>
 </svg>
