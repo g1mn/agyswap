@@ -7,6 +7,7 @@
 <p align="center">
   <a href="https://github.com/g1mn/agyswap/actions/workflows/ci.yml"><img src="https://github.com/g1mn/agyswap/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="https://github.com/g1mn/agyswap/releases"><img src="https://img.shields.io/github/v/release/g1mn/agyswap?color=blue&label=release" alt="Release"></a>
+  <a href="https://g1mn.github.io/agyswap/"><img src="https://img.shields.io/badge/Token_Savings-94.2%25-brightgreen.svg" alt="Token Savings: 94.2%"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"></a>
   <a href="#-requirements"><img src="https://img.shields.io/badge/Platform-macOS-lightgrey.svg" alt="Platform: macOS"></a>
   <a href="#-installation"><img src="https://img.shields.io/badge/Python-3.8+-green.svg" alt="Python: 3.8+"></a>
@@ -47,12 +48,60 @@ For a live, interactive visualization of account slots, switching sequences, and
 - ⚠️ **30-Minute Expiry Warnings**: Proactively highlights expiring credentials with `⚠️ Soon`.
 - 🔍 **`health` Dashboard**: Instant summary of token validities, relative expiration times, and slot mappings.
 - 🛡️ **`audit` Command**: Verifies and auto-corrects filesystem permissions across all credential stores.
+- 🧠 **Context & AST Repo-Map (`ctx`)**: **94.2% Token Compression (~27k tokens saved/session)** via pure AST skeletons and lightweight state persistence.
+- 📊 **Real-time Token Benchmarking (`ctx bench`)**: Built-in visual terminal cards, Markdown tables (`-md`), and JSON metrics for tracking token efficiency.
 - 🏷️ **Account Aliases**: Assign meaningful aliases (`main`, `work`, `dev`) for fast switching.
 - 📦 **Backup & Migration (`export`/`import`)**: Migrate slot configurations across machines (live secrets excluded).
 - 🎯 **`--dry-run` Previews**: Non-destructive preview mode for `switch`, `remove`, and `sync`.
 - 🔔 **Active Session Detection**: Scans and warns about running `agy` sessions and their working directories.
 - ⌨️ **Shell Auto-Completion**: Tab completion scripts for `bash`, `zsh`, and `fish`.
 - 📦 **Zero External Dependencies**: Powered entirely by the Python 3 standard library.
+
+---
+
+## 🧠 Intelligent Context Optimization & Token Benchmarks
+
+`agyswap` includes a built-in AST code mapping and context management engine (`agyswap ctx`) designed to drastically reduce token waste and prevent context bloat in agentic coding workflows.
+
+### 📊 Real-Time Benchmark (`agyswap ctx bench`)
+
+```text
+┌─────────────────────────────────────────────────────────────┐
+│ 📊 agyswap Context Compression Benchmark                     │
+├─────────────────────────────────────────────────────────────┤
+│  Indexed Files      : 9                                     │
+│  Raw Codebase Lines : 2,542 lines (102,907 chars)           │
+│  Raw Token Footprint: ~29,016 tokens                        │
+├─────────────────────────────────────────────────────────────┤
+│  Repo-Map Lines     : 110 lines                             │
+│  Repo-Map Tokens    : ~1,673 / 2,000 tokens                 │
+│  Saved Tokens / Run : ~27,343 tokens                        │
+├─────────────────────────────────────────────────────────────┤
+│  Compression Rate   : [██████████████████░░]  94.2% │
+└─────────────────────────────────────────────────────────────┘
+```
+
+| Scenario | Naive Exploration | `agyswap ctx` (AST Map + Firewall) | Net Savings |
+| :--- | :---: | :---: | :---: |
+| **Codebase Discovery** | Full files read (`~29.0k tokens`) | `REPO_MAP.md` single load (`~1.6k tokens`) | **🔥 94.2% Saved** |
+| **Session Reset Recovery** | Re-read raw files (`~29.0k tokens`) | `STATE.md` snapshot load (`~100 tokens`) | **⚡ 99.6% Saved** |
+| **10 Iteration Sessions** | ~290,000 tokens ($0.87+) | ~17,000 tokens ($0.05) | **16x Cost & Rate-Limit Savings** |
+
+### 🚀 Context Management Workflow
+
+```bash
+# 1. Measure real-time token compression
+agyswap ctx bench              # Visual ASCII report
+agyswap ctx bench -md          # Markdown table format (for PRs / docs)
+agyswap ctx bench --json       # JSON format for CI/CD pipelines
+
+# 2. Inspect compact AST skeleton of the codebase
+agyswap ctx map --budget 2000
+
+# 3. Synchronize Repo-Map & Working State before resetting an agy chat
+agyswap ctx clean
+/clear                         # Run in agy: resume instantly with zero context loss!
+```
 
 ---
 

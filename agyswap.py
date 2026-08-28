@@ -1597,6 +1597,98 @@ complete -c agyswap -n '__fish_seen_subcommand_from sync' -l all -d 'Check sync 
         print("Supported shells: bash, zsh, fish")
         sys.exit(1)
 
+# ── Context Subcommand Handler ───────────────────────────────────────────────
+def cmd_context(args):
+    """Handles 'agyswap context' (or 'agyswap ctx') subcommands."""
+    subaction = getattr(args, "ctx_action", None) or "map"
+    
+    try:
+        from modules.context.repomap import RepoMapper
+        from modules.context.budgeter import TokenBudgeter
+        from modules.context.state import StateManager
+    except ImportError as e:
+        print(red(f"✗ Failed to load context sub-module: {e}"))
+        sys.exit(1)
+
+    root_dir = Path(getattr(args, "dir", "."))
+
+    if subaction == "map":
+        mapper = RepoMapper(root_dir=root_dir)
+        repo_map = mapper.generate_map()
+        budget = getattr(args, "budget", 2000)
+        trimmed_map = TokenBudgeter.trim_to_budget(repo_map, max_tokens=budget)
+        est_tokens = TokenBudgeter.estimate_tokens(trimmed_map)
+
+        if getattr(args, "save", False):
+            out_dir = root_dir / ".agents" / "memory"
+            out_dir.mkdir(parents=True, exist_ok=True)
+            try:
+                out_dir.chmod(0o700)
+            except Exception:
+                pass
+            out_file = out_dir / "REPO_MAP.md"
+            out_file.write_text(trimmed_map, encoding="utf-8")
+            try:
+                out_file.chmod(0o600)
+            except Exception:
+                pass
+            print(green(f"✓ Repo-Map saved to {out_file} (~{est_tokens:,} tokens)"))
+        else:
+            print(trimmed_map)
+            print(gray(f"\n[Token budget: {est_tokens:,} / {budget:,} estimated tokens]"))
+
+    elif subaction == "state":
+        goal = getattr(args, "goal", "Active Development")
+        state_mgr = StateManager(root_dir=root_dir)
+        snapshot = state_mgr.snapshot(goal=goal)
+        est_tokens = TokenBudgeter.estimate_tokens(snapshot)
+
+        if getattr(args, "save", False):
+            out_file = state_mgr.save_snapshot(goal=goal)
+            print(green(f"✓ State snapshot saved to {out_file} (~{est_tokens:,} tokens)"))
+        else:
+            print(snapshot)
+            print(gray(f"\n[Token budget: ~{est_tokens:,} tokens]"))
+
+    elif subaction == "clean":
+        # Synchronize both map and state to prepare clean context
+        mapper = RepoMapper(root_dir=root_dir)
+        repo_map = mapper.generate_map()
+        budget = getattr(args, "budget", 2000)
+        trimmed_map = TokenBudgeter.trim_to_budget(repo_map, max_tokens=budget)
+        
+        out_dir = root_dir / ".agents" / "memory"
+        out_dir.mkdir(parents=True, exist_ok=True)
+        try:
+            out_dir.chmod(0o700)
+        except Exception:
+            pass
+
+        map_file = out_dir / "REPO_MAP.md"
+        map_file.write_text(trimmed_map, encoding="utf-8")
+        try:
+            map_file.chmod(0o600)
+        except Exception:
+            pass
+
+        state_mgr = StateManager(root_dir=root_dir)
+        state_mgr.save_snapshot(goal=getattr(args, "goal", "Context Compaction & Session Reset"))
+        print(green("✓ Context sanitized and persistent memory synchronized in .agents/memory/"))
+        print(cyan("💡 You can now safely run '/clear' in agy and resume with full codebase awareness."))
+
+    elif subaction in ("bench", "stats"):
+        from modules.context.benchmarker import ContextBenchmarker
+        benchmarker = ContextBenchmarker(root_dir=root_dir)
+        budget = getattr(args, "budget", 2000)
+        stats = benchmarker.run_benchmark(budget=budget)
+
+        if getattr(args, "json", False):
+            print(ContextBenchmarker.render_json(stats))
+        elif getattr(args, "markdown", False):
+            print(ContextBenchmarker.render_markdown(stats))
+        else:
+            print(ContextBenchmarker.render_cli_report(stats))
+
 # ── Main Entrypoint ─────────────────────────────────────────────────────────
 def main():
     if len(sys.argv) == 2 and sys.argv[1] in ["--version", "-V"]:
@@ -1608,7 +1700,7 @@ def main():
         return
 
     if len(sys.argv) in (2, 3, 4, 5) and not sys.argv[1].startswith("-"):
-        subcmds = ["list", "ls", "status", "st", "add", "switch", "sw", "remove", "rm", "rename", "whoami", "sync", "rotate", "health", "audit", "export", "import", "viz", "completion"]
+        subcmds = ["list", "ls", "status", "st", "add", "switch", "sw", "remove", "rm", "rename", "whoami", "sync", "rotate", "health", "audit", "export", "import", "viz", "completion", "context", "ctx"]
         if sys.argv[1] not in subcmds:
             resume = ("-r" in sys.argv[2:] or "--resume" in sys.argv[2:])
             new_s = ("-n" in sys.argv[2:] or "--new" in sys.argv[2:])
@@ -1632,8 +1724,8 @@ def main():
   agyswap                    List all accounts
   agyswap 2                  Quick switch to slot #2
   agyswap 2 -r               Switch + resume session (agy -c)
-  agyswap 2 -r -y            Switch + resume + auto-approve all tool permissions
-  agyswap 2 -n -y            Switch + new session + auto-approve all tool permissions
+  agyswap ctx map            Generate compact AST repository map
+  agyswap ctx state          Generate lightweight working state snapshot
   agyswap rotate --all       Refresh OAuth tokens for all slots (no browser)
   agyswap audit              Audit file permissions & security
   agyswap health             Token expiry dashboard
@@ -1699,6 +1791,31 @@ def main():
     p_completion = subparsers.add_parser("completion", help="Generate shell auto-completion script")
     p_completion.add_argument("shell", choices=["bash", "zsh", "fish"], help="Target shell")
 
+    # ── Context Sub-module Subparser ──
+    p_ctx = subparsers.add_parser("context", aliases=["ctx"], help="AST Repo Map & Intelligent Context Optimizer")
+    ctx_sub = p_ctx.add_subparsers(dest="ctx_action", help="Context operations")
+    
+    p_ctx_map = ctx_sub.add_parser("map", help="Generate compact AST Repo Map")
+    p_ctx_map.add_argument("--dir", default=".", help="Target root directory (default: .)")
+    p_ctx_map.add_argument("--budget", type=int, default=2000, help="Max token budget (default: 2000)")
+    p_ctx_map.add_argument("--save", action="store_true", help="Save directly to .agents/memory/REPO_MAP.md")
+
+    p_ctx_state = ctx_sub.add_parser("state", help="Generate working state snapshot")
+    p_ctx_state.add_argument("--dir", default=".", help="Target root directory (default: .)")
+    p_ctx_state.add_argument("--goal", default="Active Development", help="Current task goal description")
+    p_ctx_state.add_argument("--save", action="store_true", help="Save directly to .agents/memory/STATE.md")
+
+    p_ctx_clean = ctx_sub.add_parser("clean", help="Sync Repo-Map & State to .agents/memory/ before '/clear'")
+    p_ctx_clean.add_argument("--dir", default=".", help="Target root directory (default: .)")
+    p_ctx_clean.add_argument("--budget", type=int, default=2000, help="Max token budget (default: 2000)")
+    p_ctx_clean.add_argument("--goal", default="Context Compaction & Session Reset", help="Current goal")
+
+    p_ctx_bench = ctx_sub.add_parser("bench", aliases=["stats"], help="Measure codebase token footprint and compression efficiency")
+    p_ctx_bench.add_argument("--dir", default=".", help="Target root directory (default: .)")
+    p_ctx_bench.add_argument("--budget", type=int, default=2000, help="Max token budget (default: 2000)")
+    p_ctx_bench.add_argument("--json", action="store_true", help="Output benchmark metrics in JSON format")
+    p_ctx_bench.add_argument("-md", "--markdown", action="store_true", help="Output benchmark metrics in Markdown table format")
+
     args = parser.parse_args()
 
     cmds = {
@@ -1717,6 +1834,7 @@ def main():
         "import": cmd_import,
         "viz": cmd_viz,
         "completion": cmd_completion,
+        "context": cmd_context, "ctx": cmd_context,
     }
 
     cmd_fn = cmds.get(args.command)

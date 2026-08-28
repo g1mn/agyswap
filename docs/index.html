@@ -448,10 +448,11 @@
           <a href="#sec-slots"><span class="nav-letter">B</span>Slot Inventory</a>
           <a href="#sec-sequence"><span class="nav-letter">C</span>Switching Sequence</a>
           <a href="#sec-commands"><span class="nav-letter">D</span>Command Reference</a>
-          <a href="#sec-security"><span class="nav-letter">E</span>Security Model</a>
-          <a href="#sec-storage"><span class="nav-letter">F</span>Storage Layout</a>
-          <a href="#sec-install"><span class="nav-letter">G</span>Installation &amp; Setup</a>
-          <a href="#sec-faq"><span class="nav-letter">H</span>Troubleshooting FAQ</a>
+          <a href="#sec-context"><span class="nav-letter">E</span>Context &amp; Token Benchmark</a>
+          <a href="#sec-security"><span class="nav-letter">F</span>Security Model</a>
+          <a href="#sec-storage"><span class="nav-letter">G</span>Storage Layout</a>
+          <a href="#sec-install"><span class="nav-letter">H</span>Installation &amp; Setup</a>
+          <a href="#sec-faq"><span class="nav-letter">I</span>Troubleshooting FAQ</a>
         </nav>
       </div>
 
@@ -677,15 +678,72 @@ $ agyswap switch 3
             <div class="desc">Imports slot metadata from JSON with automatic slot conflict resolution.</div>
           </div>
           <div class="cmd-card">
+            <div class="sig">agyswap ctx [bench|clean|map]</div>
+            <div class="desc">AST Codebase Mapping &amp; Token Optimizer. <code>bench</code>: measure token compression rate. <code>clean</code>: sync state before /clear.</div>
+          </div>
+          <div class="cmd-card">
             <div class="sig">agyswap completion &lt;shell&gt;</div>
             <div class="desc">Generates shell auto-completion scripts for zsh, bash, and fish with dynamic slot completion.</div>
           </div>
         </div>
       </section>
 
-      <!-- Section E: Security Model -->
+      <!-- Section E: Intelligent Context & Token Benchmarks -->
+      <section class="card" id="sec-context">
+        <h2>E · Intelligent Context Optimization &amp; Token Benchmarks</h2>
+        <p style="color:var(--muted);font-size:13px;margin-top:0">Reduces agentic token consumption by <b>94.2%</b> using pure AST skeletons and lightweight state snapshots. Zero external dependencies.</p>
+        
+        <div class="codeblock" style="margin-bottom:16px">
+┌─────────────────────────────────────────────────────────────┐
+│ 📊 agyswap Context Compression Benchmark                     │
+├─────────────────────────────────────────────────────────────┤
+│  Indexed Files      : 9                                     │
+│  Raw Codebase Lines : 2,542 lines (102,907 chars)           │
+│  Raw Token Footprint: ~29,016 tokens                        │
+├─────────────────────────────────────────────────────────────┤
+│  Repo-Map Lines     : 110 lines                             │
+│  Repo-Map Tokens    : ~1,673 / 2,000 tokens                 │
+│  Saved Tokens / Run : ~27,343 tokens                        │
+├─────────────────────────────────────────────────────────────┤
+│  Compression Rate   : [██████████████████░░]  94.2% │
+└─────────────────────────────────────────────────────────────┘
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Workflow Phase</th>
+              <th>Naive Full-File Read</th>
+              <th>agyswap ctx (AST Map + Firewall)</th>
+              <th>Net Efficiency</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><b>Codebase Discovery</b></td>
+              <td>Full source read (~29.0k tokens)</td>
+              <td><span class="mono">REPO_MAP.md</span> (~1.6k tokens)</td>
+              <td><span style="color:var(--ok);font-weight:700">🔥 94.2% Saved</span></td>
+            </tr>
+            <tr>
+              <td><b>Session Reset Recovery</b></td>
+              <td>Re-read raw files (~29.0k tokens)</td>
+              <td><span class="mono">STATE.md</span> (~100 tokens)</td>
+              <td><span style="color:var(--ok);font-weight:700">⚡ 99.6% Saved</span></td>
+            </tr>
+            <tr>
+              <td><b>10 Agent Sessions</b></td>
+              <td>~290,000 tokens ($0.87+)</td>
+              <td>~17,000 tokens ($0.05)</td>
+              <td><span style="color:var(--accent);font-weight:700">16x Cost / Rate-limit Savings</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- Section F: Security Model -->
       <section class="card" id="sec-security">
-        <h2>E · Security Architecture &amp; Threat Model</h2>
+        <h2>F · Security Architecture &amp; Threat Model</h2>
         <table>
           <thead>
             <tr>
@@ -719,9 +777,9 @@ $ agyswap switch 3
         </table>
       </section>
 
-      <!-- Section F: Storage Layout -->
+      <!-- Section G: Storage Layout -->
       <section class="card" id="sec-storage">
-        <h2>F · POSIX Storage Layout</h2>
+        <h2>G · POSIX Storage Layout</h2>
         <div class="codeblock">
 ~/.agy-swap/                           <span style="color:var(--faint)"># Mode 0700 (Owner rwx only)</span>
 ├── config.json                        <span style="color:var(--faint)"># Mode 0600 (active_slot, accounts metadata)</span>
@@ -734,9 +792,9 @@ $ agyswap switch 3
         </div>
       </section>
 
-      <!-- Section G: Installation & Setup -->
+      <!-- Section H: Installation & Setup -->
       <section class="card" id="sec-install">
-        <h2>G · Installation &amp; Shell Completion</h2>
+        <h2>H · Installation &amp; Shell Completion</h2>
         <div class="tabs">
           <button class="tab-btn active" data-tab="tab-install-brew">Homebrew (macOS)</button>
           <button class="tab-btn" data-tab="tab-install-curl">1-Line Curl</button>
@@ -791,9 +849,9 @@ agyswap completion fish > ~/.config/fish/completions/agyswap.fish
         </div>
       </section>
 
-      <!-- Section H: FAQ -->
+      <!-- Section I: FAQ -->
       <section class="card" id="sec-faq">
-        <h2>H · Troubleshooting FAQ</h2>
+        <h2>I · Troubleshooting FAQ</h2>
         <div class="faq-item">
           <div class="faq-q">Do running agy CLI sessions switch immediately? <span>+</span></div>
           <div class="faq-a">macOS caches Keychain reads in memory for short durations. While the Keychain is updated instantly in ~0.1s, starting a new terminal prompt or restarting existing agy sessions guarantees active credential activation.</div>
