@@ -1,0 +1,25 @@
+Screen {
+    background: $surface;
+}
+
+#accounts-panel {
+    height: auto;
+    max-height: 60%;
+    border: round $primary;
+    padding: 1 2;
+    overflow-y: auto;
+}
+
+#menu, #accounts {
+    height: 1fr;
+    border: round $primary-darken-1;
+    margin-top: 1;
+}
+
+AccountItem.flash {
+    background: $warning 30%;
+}
+
+MenuItem {
+    padding: 0 1;
+}

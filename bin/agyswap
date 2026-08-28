@@ -2,8 +2,8 @@
 """
 agyswap — Antigravity (agy) CLI Multi-Account Switcher & Session Manager
 ========================================================================
-A lightweight, zero-dependency developer utility to manage and switch between
-multiple Google Antigravity (gemini/antigravity) OAuth profiles on macOS Keychain.
+A lightweight developer utility to manage and switch between multiple Google
+Antigravity (gemini/antigravity) OAuth profiles on macOS Keychain.
 
 Usage:
   agyswap                      List all registered account slots (default)
@@ -14,6 +14,9 @@ Usage:
   agyswap add [alias]          Register current agy login session as a slot
   agyswap remove <slot>        Remove an account slot [--dry-run]
   agyswap rename <slot> <alias> Rename slot alias
+  agyswap alias [slot] [name]  Standalone alias set/unset/list (--unset to clear)
+  agyswap enable <slot>        Re-include a slot in blind rotation
+  agyswap disable <slot>       Exclude a slot from blind rotation (still switchable)
   agyswap whoami               Fetch real-time Google UserInfo profile
   agyswap sync                 Sync latest Keychain token to slot file [--all] [--dry-run]
   agyswap rotate [slot]        Trigger token refresh for an account
@@ -22,6 +25,9 @@ Usage:
   agyswap export [file]        Export slot metadata to JSON (tokens excluded)
   agyswap import <file>        Import slot metadata from JSON
   agyswap viz                  Update docs/index.html with local slot status
+  agyswap quota [slot]         Show per-account, per-model Gemini API quota
+  agyswap tui                  Launch interactive live account dashboard
+  agyswap watch                Launch live quota-watch view
   agyswap completion <shell>   Generate shell auto-completion script (bash/zsh/fish)
   agyswap --version            Show version
 """
@@ -47,20 +53,65 @@ import urllib.request
 import urllib.parse
 import urllib.error
 
+# ── Bundled Package Bootstrap ───────────────────────────────────────────────
+# Homebrew/curl installs run this file directly, often via a symlink whose
+# directory Python's automatic sys.path[0] does NOT resolve through — so
+# modules/ installed next to the *real* file can be invisible to `import`.
+# Path(__file__).resolve() follows the symlink chain (same technique cmd_viz
+# already uses to locate docs/); check both the file's own directory (pip
+# installs, Homebrew) and its parent (this repo's agyswap.py/modules/ layout,
+# reused by bin/agyswap and any curl install that mirrors it).
+for _candidate in (Path(__file__).resolve().parent, Path(__file__).resolve().parent.parent):
+    # Check for a file unique to *our* modules/ package, not a bare is_dir() —
+    # otherwise an unrelated "modules" folder two directories up from wherever
+    # agyswap.py happens to be copied could get inserted at sys.path[0] first.
+    if (_candidate / "modules" / "quota.py").is_file() and str(_candidate) not in sys.path:
+        sys.path.insert(0, str(_candidate))
+        break
+del _candidate
+
 # ── Platform Guard ────────────────────────────────────────────────────────────
 if sys.platform != "darwin":
     print("Error: agyswap is currently only supported on macOS (macOS Keychain required).", file=sys.stderr)
     sys.exit(1)
 
 # ── Version ──────────────────────────────────────────────────────────────────
-VERSION = "0.4.0"
+VERSION = "0.5.0"
 
 # ── Constants & Paths ────────────────────────────────────────────────────────
-BASE_DIR = Path.home() / ".agy-swap"
+BASE_DIR = Path.home() / ".agyswap"
 CONFIG_FILE = BASE_DIR / "config.json"
 SLOTS_DIR = BASE_DIR / "slots"
 BACKUP_DIR = BASE_DIR / "backup"
 LOCK_FILE = BASE_DIR / ".agyswap.lock"
+
+# Legacy data dir from before v0.5.0. Also happens to be the data dir used by the
+# unrelated, similarly-named "pr656d/agy-swap" tool — migrate_legacy_data_dir() only
+# ever moves files we recognize as our own, and never touches anything else left here.
+LEGACY_BASE_DIR = Path.home() / ".agy-swap"
+
+def migrate_legacy_data_dir() -> None:
+    """One-time move of our data from the legacy ~/.agy-swap/ to ~/.agyswap/.
+    No-op once migrated (or on a fresh install). Only moves files we own."""
+    if CONFIG_FILE.exists() or not (LEGACY_BASE_DIR / "config.json").exists():
+        return
+    BASE_DIR.mkdir(mode=0o700, parents=True, exist_ok=True)
+    # config.json moves LAST: the guard above treats CONFIG_FILE.exists() as "already
+    # migrated", so if this loop is interrupted (crash, disk full) partway through,
+    # moving config.json first would make every future run silently no-op while
+    # slots/backup are still stranded in the legacy dir. Moving it last means an
+    # interrupted migration always retries cleanly on the next invocation.
+    for name in ("slots", "backup", "dashboard.html", "config.json"):
+        src = LEGACY_BASE_DIR / name
+        if src.exists():
+            shutil.move(str(src), str(BASE_DIR / name))
+    for p in (BASE_DIR, SLOTS_DIR, BACKUP_DIR):
+        if p.exists():
+            try:
+                os.chmod(p, 0o700)
+            except Exception:
+                pass
+    print(yellow(f"⚠️  Migrated agyswap data: {LEGACY_BASE_DIR} → {BASE_DIR}"))
 
 KEYCHAIN_SERVICE = "gemini"
 KEYCHAIN_ACCOUNT = "antigravity"
@@ -301,7 +352,8 @@ class StorageManager:
             with open(CONFIG_FILE, "r", encoding="utf-8") as f:
                 return json.load(f)
         except json.JSONDecodeError as e:
-            print(yellow(f"⚠️  config.json is corrupted ({e}). Attempting auto-recovery from backup..."))
+            # No print() here — this runs on TUI background worker threads too,
+            # where writing to stdout would corrupt the rendered dashboard.
             latest_backup = cls._find_latest_backup()
             if latest_backup:
                 shutil.copy2(latest_backup, CONFIG_FILE)
@@ -583,9 +635,10 @@ def cmd_list(args):
         exp_time, exp_rel, is_expired, is_soon = format_expiry_detail(exp_raw)
         synced_ago = time_ago_str(synced_at)
 
+        disabled_str = gray(" (disabled)") if acc.get("disabled", False) else ""
         slot_prefix = bold(f"  {slot}:")
         email_str = bold(email) if is_active else email
-        print(f"{slot_prefix} {email_str}{display_tag}{active_str}")
+        print(f"{slot_prefix} {email_str}{display_tag}{active_str}{disabled_str}")
 
         if is_expired:
             token_status_str = f"{red('Expired')} ({exp_rel})"
@@ -729,6 +782,7 @@ def cmd_add(args):
         "name": user_info.get("name") or (existing.get("name") if existing else ""),
         "alias": getattr(args, "alias", "") or (existing.get("alias") if existing else ""),
         "auth_method": auth_method,
+        "disabled": (existing.get("disabled", False) if existing else False),
         "added_at": existing.get("added_at", now_iso) if existing else now_iso,
         "last_used_at": now_iso
     }
@@ -756,9 +810,22 @@ def cmd_add(args):
 
     print(green(f"✓ Slot #{slot_num} ({email}) registered successfully! (Set as active slot)"))
 
+def _next_enabled_account(accounts: list, active_slot) -> dict | None:
+    """Picks the next non-disabled account after active_slot, in slot-number order,
+    wrapping around. Falls back to the first enabled account if there's no active
+    slot or it can't be located among the enabled ones."""
+    enabled = [a for a in sorted(accounts, key=lambda x: x.get("slot", 0)) if not a.get("disabled", False)]
+    if not enabled:
+        return None
+    if active_slot is None:
+        return enabled[0]
+    idx = next((i for i, a in enumerate(enabled) if a.get("slot") == active_slot), None)
+    return enabled[0] if idx is None else enabled[(idx + 1) % len(enabled)]
+
 def cmd_switch(args):
-    """Switches active Antigravity profile to target slot number or email/alias."""
-    target = args.target.strip()
+    """Switches active Antigravity profile to target slot number or email/alias.
+    With no target, rotates to the next enabled account (blind rotation)."""
+    target_raw = getattr(args, "target", None)
     dry_run = getattr(args, "dry_run", False)
     force = getattr(args, "force", False)
 
@@ -769,11 +836,19 @@ def cmd_switch(args):
         print(red("✗ No registered slots found. Register one using 'agyswap add'."))
         sys.exit(1)
 
-    selected = find_account(accounts, target)
-    if not selected:
-        print(red(f"✗ Target account '{target}' not found."))
-        print("To see available slots, run: " + bold("agyswap list"))
-        sys.exit(1)
+    if target_raw is None:
+        selected = _next_enabled_account(accounts, cfg.get("active_slot"))
+        if not selected:
+            print(red("✗ No enabled accounts to rotate to. Re-enable one with 'agyswap enable <slot>'."))
+            sys.exit(1)
+        target = str(selected.get("slot"))
+    else:
+        target = target_raw.strip()
+        selected = find_account(accounts, target)
+        if not selected:
+            print(red(f"✗ Target account '{target}' not found."))
+            print("To see available slots, run: " + bold("agyswap list"))
+            sys.exit(1)
 
     slot_num = selected.get("slot")
     email = selected.get("email")
@@ -880,10 +955,23 @@ def cmd_remove(args):
 
     print(green(f"✓ Slot #{slot_num} ({email}) removed successfully."))
 
+def _set_alias(accounts: list, selected: dict, new_alias: str) -> None:
+    """Shared by cmd_rename and cmd_alias. Validates uniqueness (skipped when clearing)."""
+    if new_alias:
+        for a in accounts:
+            if a is not selected and a.get("alias", "").lower() == new_alias.lower():
+                print(red(f"✗ Alias '{new_alias}' is already in use by slot #{a.get('slot')}."))
+                sys.exit(1)
+    selected["alias"] = new_alias
+
 def cmd_rename(args):
     """Renames an account slot alias."""
     target = args.target.strip()
     new_alias = args.new_alias.strip()
+
+    if not new_alias:
+        print(red("✗ New alias cannot be empty. Use 'agyswap alias <slot> --unset' to remove an alias."))
+        sys.exit(1)
 
     cfg = StorageManager.load_config()
     accounts = cfg.get("accounts", [])
@@ -893,21 +981,91 @@ def cmd_rename(args):
         print(red(f"✗ Slot '{target}' not found."))
         sys.exit(1)
 
-    for a in accounts:
-        if a != selected and a.get("alias", "").lower() == new_alias.lower():
-            print(red(f"✗ Alias '{new_alias}' is already in use by slot #{a.get('slot')}."))
-            sys.exit(1)
-
     slot_num = selected.get("slot")
     email = selected.get("email")
     old_alias = selected.get("alias", "")
 
-    selected["alias"] = new_alias
+    _set_alias(accounts, selected, new_alias)
     cfg["accounts"] = accounts
     StorageManager.save_config(cfg)
 
     old_str = f"'{old_alias}'" if old_alias else "(none)"
     print(green(f"✓ Slot #{slot_num} ({email}) alias changed: {old_str} → '{new_alias}'"))
+
+def cmd_alias(args):
+    """Standalone alias management: list / set / unset."""
+    identifier = getattr(args, "target", None)
+    name = getattr(args, "name", None)
+    unset = getattr(args, "unset", False)
+
+    cfg = StorageManager.load_config()
+    accounts = cfg.get("accounts", [])
+
+    if identifier is None:
+        aliased = [a for a in sorted(accounts, key=lambda x: x.get("slot", 0)) if a.get("alias")]
+        if not aliased:
+            print(yellow("No aliases set."))
+            return
+        print(bold("Aliases:"))
+        for a in aliased:
+            print(f"  #{a.get('slot')}: {a.get('alias')}  ({a.get('email')})")
+        return
+
+    target = identifier.strip()
+    selected = find_account(accounts, target)
+    if not selected:
+        print(red(f"✗ Slot '{target}' not found."))
+        sys.exit(1)
+    slot_num, email, old_alias = selected.get("slot"), selected.get("email"), selected.get("alias", "")
+
+    if unset:
+        _set_alias(accounts, selected, "")
+        cfg["accounts"] = accounts
+        StorageManager.save_config(cfg)
+        if old_alias:
+            print(green(f"✓ Slot #{slot_num} ({email}) alias removed (was '{old_alias}')."))
+        else:
+            print(yellow(f"· Slot #{slot_num} ({email}) had no alias set."))
+        return
+
+    if not name:
+        print(red("✗ Provide a new alias name, or use --unset to remove the alias."))
+        sys.exit(1)
+
+    _set_alias(accounts, selected, name.strip())
+    cfg["accounts"] = accounts
+    StorageManager.save_config(cfg)
+    old_str = f"'{old_alias}'" if old_alias else "(none)"
+    print(green(f"✓ Slot #{slot_num} ({email}) alias changed: {old_str} → '{name.strip()}'"))
+
+def _set_account_disabled(args, disabled: bool, verb_past: str) -> None:
+    target = args.target.strip()
+    cfg = StorageManager.load_config()
+    accounts = cfg.get("accounts", [])
+    selected = find_account(accounts, target)
+    if not selected:
+        print(red(f"✗ Slot '{target}' not found."))
+        sys.exit(1)
+
+    slot_num, email = selected.get("slot"), selected.get("email")
+    already = selected.get("disabled", False) == disabled
+    selected["disabled"] = disabled
+    cfg["accounts"] = accounts
+    StorageManager.save_config(cfg)
+
+    if already:
+        print(yellow(f"· Slot #{slot_num} ({email}) is already {verb_past}."))
+    else:
+        color_fn = yellow if disabled else green
+        print(color_fn(f"✓ Slot #{slot_num} ({email}) {verb_past}."))
+
+def cmd_disable(args):
+    """Excludes a slot from blind rotation; it remains explicitly switchable."""
+    _set_account_disabled(args, True, "disabled")
+
+def cmd_enable(args):
+    """Re-includes a previously disabled slot in blind rotation."""
+    _set_account_disabled(args, False, "enabled")
 
 def cmd_whoami(args):
     """Fetches real-time profile from Google UserInfo API."""
@@ -1134,6 +1292,7 @@ def cmd_health(args):
                 "slot": slot_num,
                 "email": acc.get("email", "?"),
                 "alias": acc.get("alias", ""),
+                "disabled": acc.get("disabled", False),
                 "is_active": (slot_num == active_slot),
                 "expiry": exp_raw,
                 "expiry_human": exp_rel,
@@ -1322,7 +1481,7 @@ def safe_json_for_script(data) -> str:
     return json.dumps(data, ensure_ascii=True, indent=2).replace("<", "\u003c").replace(">", "\u003e").replace("&", "\u0026")
 
 def cmd_viz(args):
-    """Generates an interactive HTML dashboard in isolated ~/.agy-swap/ without modifying git-tracked docs/."""
+    """Generates an interactive HTML dashboard in isolated ~/.agyswap/ without modifying git-tracked docs/."""
     current_path = Path(__file__).resolve()
     candidates = [
         current_path.parent / "docs" / "index.html",
@@ -1403,7 +1562,7 @@ def cmd_viz(args):
         print(f"  • Registered Slots: {len(slots_data)} (Active #{active_slot})")
         return
 
-    # Default: Save to isolated ~/.agy-swap/dashboard.html (0600)
+    # Default: Save to isolated ~/.agyswap/dashboard.html (0600)
     output_path = Path(getattr(args, "output", None) or (BASE_DIR / "dashboard.html"))
     with open(output_path, "w", encoding="utf-8", opener=secure_opener) as f:
         f.write(html)
@@ -1422,6 +1581,78 @@ def cmd_viz(args):
             pass
     else:
         print(f"  • View locally: open {output_path} (or run 'agyswap viz --open')")
+
+def cmd_quota(args):
+    """Shows per-account, per-model Gemini API quota (TTL-cached)."""
+    try:
+        from modules.quota import fetch_all, read_cache
+    except ImportError as e:
+        print(red(f"✗ Failed to load quota sub-module: {e}"))
+        sys.exit(1)
+
+    cfg = StorageManager.load_config()
+    accounts = cfg.get("accounts", [])
+    if not accounts:
+        print(yellow("No registered slots found."))
+        return
+
+    target = getattr(args, "target", None)
+    if target:
+        selected = find_account(accounts, target.strip())
+        if not selected:
+            print(red(f"✗ Slot '{target}' not found."))
+            sys.exit(1)
+        candidates = [selected]
+    else:
+        candidates = [a for a in accounts if not a.get("disabled", False)]
+
+    accounts_with_tokens = []
+    for acc in candidates:
+        try:
+            token = StorageManager.load_slot(acc.get("slot")).get("token", {}).get("access_token", "")
+            if token:
+                accounts_with_tokens.append((acc.get("email"), token))
+        except Exception:
+            continue
+
+    if accounts_with_tokens:
+        cache = fetch_all(accounts_with_tokens, force=getattr(args, "refresh", False))
+    else:
+        cache = read_cache()
+
+    if getattr(args, "json", False):
+        scoped = {acc.get("email"): cache[acc.get("email")] for acc in candidates if acc.get("email") in cache}
+        print(json.dumps(scoped, indent=2))
+        return
+
+    print(bold("Gemini API Quota:"))
+    for acc in sorted(candidates, key=lambda x: x.get("slot", 0)):
+        entry = cache.get(acc.get("email"))
+        if not entry:
+            print(f"  #{acc.get('slot')}  {acc.get('email'):<35}  {gray('(no quota data yet)')}")
+            continue
+        stale_tag = yellow(" [stale]") if entry.get("stale") else ""
+        print(f"  #{acc.get('slot')}  {acc.get('email')}{stale_tag}")
+        for model_id, m in entry.get("models", {}).items():
+            print(f"      · {model_id:<24} {m['remaining_pct']:>5.1f}% remaining   resets {m.get('resets_at', '?')}")
+
+def cmd_tui(args):
+    """Launches the live interactive terminal dashboard (rich/textual)."""
+    try:
+        from modules.tui.app import run_tui
+    except ImportError as e:
+        print(red(f"✗ Failed to load TUI module: {e}"))
+        sys.exit(1)
+    run_tui(start_watch=False)
+
+def cmd_watch(args):
+    """Launches directly into the live quota-watch view (rich/textual)."""
+    try:
+        from modules.tui.app import run_tui
+    except ImportError as e:
+        print(red(f"✗ Failed to load TUI module: {e}"))
+        sys.exit(1)
+    run_tui(start_watch=True)
 
 def cmd_completion(args):
     """Generates shell auto-completion scripts."""
@@ -1445,6 +1676,9 @@ _agyswap() {
     'remove:Remove an account slot'
     'rm:Alias for remove'
     'rename:Rename slot alias'
+    'alias:Standalone alias management (set/unset/list)'
+    'enable:Re-include a slot in blind rotation'
+    'disable:Exclude a slot from blind rotation'
     'whoami:Fetch live Google UserInfo profile'
     'sync:Sync latest Keychain credentials to slot'
     'rotate:Trigger token refresh'
@@ -1453,6 +1687,9 @@ _agyswap() {
     'export:Export slot metadata (tokens excluded)'
     'import:Import slot metadata from file'
     'viz:Update docs/index.html architecture view'
+    'quota:Show per-account Gemini API quota'
+    'tui:Launch interactive live account dashboard'
+    'watch:Launch live quota-watch view'
     'completion:Generate shell auto-completion script'
   )
 
@@ -1484,7 +1721,7 @@ for acc in data.get('accounts', []):
       ;;
     3)
       case $words[2] in
-        switch|sw|remove|rm|rename|rotate)
+        switch|sw|remove|rm|rename|rotate|alias|enable|disable|quota)
           _describe 'slot' slot_completions
           ;;
         completion)
@@ -1508,7 +1745,7 @@ _agyswap_complete() {
   cur="${COMP_WORDS[COMP_CWORD]}"
   prev="${COMP_WORDS[COMP_CWORD-1]}"
 
-  local commands="list ls switch sw status st add remove rm rename whoami sync rotate health audit export import viz completion"
+  local commands="list ls switch sw status st add remove rm rename alias enable disable whoami sync rotate health audit export import viz quota tui watch completion"
 
   if [[ $COMP_CWORD -eq 1 ]]; then
     COMPREPLY=($(compgen -W "$commands" -- "$cur"))
@@ -1516,7 +1753,7 @@ _agyswap_complete() {
   fi
 
   case "$prev" in
-    switch|sw|remove|rm|rename|rotate)
+    switch|sw|remove|rm|rename|rotate|alias|enable|disable|quota)
       local slots=""
       if command -v agyswap &>/dev/null; then
         slots=$(agyswap list --json 2>/dev/null | python3 -c "
@@ -1575,6 +1812,9 @@ complete -c agyswap -n '__fish_use_subcommand' -a 'add'        -d 'Register slot
 complete -c agyswap -n '__fish_use_subcommand' -a 'remove'     -d 'Remove slot'
 complete -c agyswap -n '__fish_use_subcommand' -a 'rm'         -d 'Alias for remove'
 complete -c agyswap -n '__fish_use_subcommand' -a 'rename'     -d 'Rename slot alias'
+complete -c agyswap -n '__fish_use_subcommand' -a 'alias'      -d 'Standalone alias management'
+complete -c agyswap -n '__fish_use_subcommand' -a 'enable'     -d 'Re-include slot in rotation'
+complete -c agyswap -n '__fish_use_subcommand' -a 'disable'    -d 'Exclude slot from rotation'
 complete -c agyswap -n '__fish_use_subcommand' -a 'whoami'     -d 'Google profile info'
 complete -c agyswap -n '__fish_use_subcommand' -a 'sync'       -d 'Sync token credentials'
 complete -c agyswap -n '__fish_use_subcommand' -a 'rotate'     -d 'Refresh token'
@@ -1583,9 +1823,12 @@ complete -c agyswap -n '__fish_use_subcommand' -a 'audit'      -d 'Security audi
 complete -c agyswap -n '__fish_use_subcommand' -a 'export'     -d 'Export slot metadata'
 complete -c agyswap -n '__fish_use_subcommand' -a 'import'     -d 'Import slot metadata'
 complete -c agyswap -n '__fish_use_subcommand' -a 'viz'        -d 'Update HTML dashboard'
+complete -c agyswap -n '__fish_use_subcommand' -a 'quota'      -d 'Show Gemini API quota'
+complete -c agyswap -n '__fish_use_subcommand' -a 'tui'        -d 'Launch live dashboard'
+complete -c agyswap -n '__fish_use_subcommand' -a 'watch'      -d 'Launch live quota-watch view'
 complete -c agyswap -n '__fish_use_subcommand' -a 'completion' -d 'Generate auto-completion'
 
-complete -c agyswap -n '__fish_seen_subcommand_from switch sw remove rm rename rotate' -a '(__agyswap_slots)'
+complete -c agyswap -n '__fish_seen_subcommand_from switch sw remove rm rename rotate alias enable disable quota' -a '(__agyswap_slots)'
 complete -c agyswap -n '__fish_seen_subcommand_from completion' -a 'bash zsh fish'
 complete -c agyswap -n '__fish_seen_subcommand_from switch sw' -l force   -d 'Force switch with expired token'
 complete -c agyswap -n '__fish_seen_subcommand_from switch sw remove rm sync' -l dry-run -d 'Preview without modifying'
@@ -1691,6 +1934,8 @@ def cmd_context(args):
 
 # ── Main Entrypoint ─────────────────────────────────────────────────────────
 def main():
+    migrate_legacy_data_dir()
+
     if len(sys.argv) == 2 and sys.argv[1] in ["--version", "-V"]:
         print(f"agyswap {VERSION}")
         return
@@ -1700,7 +1945,7 @@ def main():
         return
 
     if len(sys.argv) in (2, 3, 4, 5) and not sys.argv[1].startswith("-"):
-        subcmds = ["list", "ls", "status", "st", "add", "switch", "sw", "remove", "rm", "rename", "whoami", "sync", "rotate", "health", "audit", "export", "import", "viz", "completion", "context", "ctx"]
+        subcmds = ["list", "ls", "status", "st", "add", "switch", "sw", "remove", "rm", "rename", "alias", "enable", "disable", "whoami", "sync", "rotate", "health", "audit", "export", "import", "viz", "quota", "tui", "watch", "completion", "context", "ctx"]
         if sys.argv[1] not in subcmds:
             resume = ("-r" in sys.argv[2:] or "--resume" in sys.argv[2:])
             new_s = ("-n" in sys.argv[2:] or "--new" in sys.argv[2:])
@@ -1746,7 +1991,7 @@ def main():
     p_add.add_argument("--email", help="Explicit email override if UserInfo lookup fails")
 
     p_switch = subparsers.add_parser("switch", aliases=["sw"], help="Switch active account profile")
-    p_switch.add_argument("target", help="Slot number, email, or alias")
+    p_switch.add_argument("target", nargs="?", default=None, help="Slot number, email, or alias (omit to rotate to the next enabled account)")
     p_switch.add_argument("-r", "--resume", action="store_true", help="Auto-resume previous session with switched account via 'agy -c'")
     p_switch.add_argument("-n", "--new", action="store_true", dest="new_session", help="Auto-launch fresh session with switched account via 'agy'")
     p_switch.add_argument("-y", "--dangerously-skip-permissions", action="store_true", dest="dangerously_skip_permissions", help="Pass --dangerously-skip-permissions to agy (requires -r or -n)")
@@ -1760,6 +2005,17 @@ def main():
     p_rename = subparsers.add_parser("rename", help="Rename slot alias")
     p_rename.add_argument("target", help="Slot number, email, or current alias")
     p_rename.add_argument("new_alias", help="New alias name")
+
+    p_alias = subparsers.add_parser("alias", help="Standalone alias management (set/unset/list)")
+    p_alias.add_argument("target", nargs="?", default=None, help="Slot number, email, or alias")
+    p_alias.add_argument("name", nargs="?", default=None, help="New alias name")
+    p_alias.add_argument("--unset", action="store_true", help="Remove the alias from the target slot")
+
+    p_disable = subparsers.add_parser("disable", help="Exclude a slot from blind rotation")
+    p_disable.add_argument("target", help="Slot number, email, or alias")
+
+    p_enable = subparsers.add_parser("enable", help="Re-include a slot in blind rotation")
+    p_enable.add_argument("target", help="Slot number, email, or alias")
 
     p_whoami = subparsers.add_parser("whoami", help="Fetch real-time Google profile")
     p_whoami.add_argument("--json", action="store_true", help="Output in JSON format")
@@ -1787,6 +2043,14 @@ def main():
     p_viz.add_argument("--open", action="store_true", help="Open generated dashboard in default browser")
     p_viz.add_argument("-o", "--output", help="Custom output HTML path (default: ~/.agy-swap/dashboard.html)")
     p_viz.add_argument("--update-docs", action="store_true", dest="update_docs", help="Update git-tracked docs/index.html (developer only)")
+
+    p_quota = subparsers.add_parser("quota", help="Show per-account, per-model Gemini API quota")
+    p_quota.add_argument("target", nargs="?", default=None, help="Slot number, email, or alias (default: all enabled slots)")
+    p_quota.add_argument("--refresh", action="store_true", help="Bypass the TTL cache and force a live re-fetch")
+    p_quota.add_argument("--json", action="store_true", help="Output in JSON format")
+
+    subparsers.add_parser("tui", help="Launch interactive live account dashboard (rich/textual)")
+    subparsers.add_parser("watch", help="Launch live quota-watch view (rich/textual)")
 
     p_completion = subparsers.add_parser("completion", help="Generate shell auto-completion script")
     p_completion.add_argument("shell", choices=["bash", "zsh", "fish"], help="Target shell")
@@ -1826,6 +2090,9 @@ def main():
         "switch": cmd_switch, "sw": cmd_switch,
         "remove": cmd_remove, "rm": cmd_remove,
         "rename": cmd_rename,
+        "alias": cmd_alias,
+        "enable": cmd_enable,
+        "disable": cmd_disable,
         "whoami": cmd_whoami,
         "sync": cmd_sync,
         "rotate": cmd_rotate,
@@ -1834,6 +2101,9 @@ def main():
         "export": cmd_export,
         "import": cmd_import,
         "viz": cmd_viz,
+        "quota": cmd_quota,
+        "tui": cmd_tui,
+        "watch": cmd_watch,
         "completion": cmd_completion,
         "context": cmd_context, "ctx": cmd_context,
     }

@@ -35,6 +35,25 @@ else
     echo "  • Fetching latest release from GitHub..."
     curl -fsSL "$RAW_URL" -o "$INSTALL_DIR/agyswap"
     chmod +x "$INSTALL_DIR/agyswap"
+
+    # modules/ (ctx, quota, tui) must sit next to the installed binary — agyswap.py
+    # resolves its own real path to find it. A single raw-file curl can't fetch a
+    # directory, so pull the repo tarball and copy modules/ out of it.
+    echo "  • Fetching modules/ (required for ctx/quota/tui subcommands)..."
+    TMP_SRC="$(mktemp -d -t agyswap-src)"
+    trap 'rm -rf "$TMP_SRC"' EXIT
+    curl -fsSL "https://github.com/${REPO}/archive/refs/heads/main.tar.gz" | tar -xzf - -C "$TMP_SRC"
+    NEW_MODULES="$(echo "$TMP_SRC"/*/modules)"
+    if [ ! -d "$NEW_MODULES" ]; then
+        echo "  ✗ Failed to locate modules/ in the downloaded source — leaving any existing install untouched." >&2
+        exit 1
+    fi
+    # Stage into a sibling dir and verify it before touching the existing install,
+    # so a bad download/extraction can't leave the user with no modules/ at all.
+    rm -rf "$INSTALL_DIR/modules.new"
+    cp -R "$NEW_MODULES" "$INSTALL_DIR/modules.new"
+    rm -rf "$INSTALL_DIR/modules"
+    mv "$INSTALL_DIR/modules.new" "$INSTALL_DIR/modules"
 fi
 
 echo "  ✓ Executable installed to: $INSTALL_DIR/agyswap"
@@ -70,3 +89,6 @@ echo "  5. Security audit:   agyswap audit"
 echo ""
 echo "  Shell completion (optional):"
 echo "    echo 'eval \"\$(agyswap completion zsh)\"' >> ~/.zshrc"
+echo ""
+echo "  Live TUI dashboard ('agyswap tui' / 'watch') needs rich + textual:"
+echo "    pip3 install --user rich textual"
