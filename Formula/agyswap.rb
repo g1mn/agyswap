@@ -2,7 +2,7 @@ class Agyswap < Formula
   desc "Fast Multi-Account Switcher for Google Antigravity (agy) CLI on macOS"
   homepage "https://github.com/g1mn/agyswap"
   url "https://github.com/g1mn/agyswap/archive/refs/tags/v0.5.0.tar.gz"
-  sha256 "3aeb7f71d34e2a951fa4cb6627b9731691fad06520440dbbc272ad54c7a5e6fe"
+  sha256 "5e2014a796169427bda5c5f3ea2771bede5cdddd216c5a8959ace2e9bf8a1f02"
   license "MIT"
 
   depends_on :macos
