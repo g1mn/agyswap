@@ -29,10 +29,10 @@
   <img src="assets/architecture.svg" alt="agyswap Architecture Topology" width="100%">
 </p>
 
-### 🌐 Interactive Architecture Dashboard
-For a live, interactive visualization of account slots, switching sequences, and storage layouts:
+### 🌐 Interactive Architecture Dashboard & Token Playground
+For a live, interactive visualization of account slots, switching sequences, and a **real-time token compression playground**:
 - **1-Click CLI Open**: Run `agyswap viz --open` to view your local account status in your default browser (saved in isolated `~/.agy-swap/dashboard.html` with Mode `0600`, completely git-clean).
-- **Online Demo**: Hosted on GitHub Pages at [https://g1mn.github.io/agyswap](https://g1mn.github.io/agyswap).
+- **Online Demo & Token Playground**: Hosted on GitHub Pages at [https://g1mn.github.io/agyswap](https://g1mn.github.io/agyswap) (Includes Interactive Token ROI Calculator & Multi-language AST Split Viewer).
 
 ---
 
