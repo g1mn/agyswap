@@ -1,13 +1,8 @@
 class Agyswap < Formula
   desc "Fast Multi-Account Switcher for Google Antigravity (agy) CLI on macOS"
   homepage "https://github.com/g1mn/agyswap"
-  # NOTE: this url/sha256 still pins v0.4.0, which predates modules/quota.py and
-  # modules/tui/ — bin.install "modules" below will only install the (older)
-  # modules/ that actually exists in whatever tag is pinned here. Bump url/sha256
-  # to a release that contains modules/quota.py + modules/tui/ before relying on
-  # `agyswap quota`/`tui`/`watch` working via Homebrew.
-  url "https://github.com/g1mn/agyswap/archive/refs/tags/v0.4.0.tar.gz"
-  sha256 "c4306ad539fad88656b0f349ba35a30195a7e6d6affa671c12a6689c52a88d10"
+  url "https://github.com/g1mn/agyswap/archive/refs/tags/v0.5.0.tar.gz"
+  sha256 "3aeb7f71d34e2a951fa4cb6627b9731691fad06520440dbbc272ad54c7a5e6fe"
   license "MIT"
 
   depends_on :macos
@@ -36,8 +31,6 @@ class Agyswap < Formula
   test do
     assert_match "agyswap #{version}", shell_output("#{bin}/agyswap --version")
     assert_match "Security Audit", shell_output("#{bin}/agyswap audit")
-    # Not asserting modules/quota.py exists here — it depends on which tag is
-    # pinned above (see NOTE), so a hardcoded assertion would break `brew test`
-    # for any pin that predates it.
+    assert_predicate bin/"modules"/"quota.py", :exist?
   end
 end
