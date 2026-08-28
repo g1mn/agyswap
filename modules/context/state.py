@@ -5,9 +5,23 @@ Captures git branch, modified files, diff summary, and high-level goals.
 
 from __future__ import annotations
 
+import os
 import subprocess
 from pathlib import Path
 from datetime import datetime, timezone
+
+
+def secure_mkdir(path: Path, mode: int = 0o700) -> None:
+    """Creates a directory (and parents) that only the owner can access, with no world/group-readable window."""
+    path.mkdir(parents=True, exist_ok=True, mode=mode)
+
+
+def secure_write(path: Path, content: str, mode: int = 0o600) -> None:
+    """Writes content to path with restrictive permissions from the moment of creation (no chmod-after race)."""
+    fd = os.open(str(path), os.O_WRONLY | os.O_CREAT | os.O_TRUNC, mode)
+    with os.fdopen(fd, "w", encoding="utf-8") as f:
+        f.write(content)
+
 
 class StateManager:
     def __init__(self, root_dir: str | Path = "."):
@@ -29,14 +43,24 @@ class StateManager:
             if res.returncode == 0:
                 status["branch"] = res.stdout.strip()
 
-            # Status short
-            res = subprocess.run(["git", "status", "--porcelain"], cwd=self.root_dir, capture_output=True, text=True, timeout=3)
+            # Status short. Use -z (NUL-delimited, unquoted paths) so filenames with spaces
+            # and rename records ("new\0old\0") parse correctly instead of naive line-splitting.
+            res = subprocess.run(["git", "status", "--porcelain", "-z"], cwd=self.root_dir, capture_output=True, text=True, timeout=3)
             if res.returncode == 0:
-                for line in res.stdout.splitlines():
-                    if len(line) < 4:
+                tokens = res.stdout.split("\0")
+                i = 0
+                while i < len(tokens):
+                    entry = tokens[i]
+                    i += 1
+                    if len(entry) < 4:
                         continue
-                    xy = line[:2]
-                    filename = line[3:].strip()
+                    xy = entry[:2]
+                    filename = entry[3:]
+                    if xy[0] in ("R", "C"):
+                        old_path = tokens[i] if i < len(tokens) else ""
+                        i += 1
+                        if old_path:
+                            filename = f"{old_path} -> {filename}"
                     if xy == "??":
                         status["untracked"].append(filename)
                     elif xy[0] in "AMRD":
@@ -96,17 +120,7 @@ class StateManager:
 
     def save_snapshot(self, goal: str = "Active Development") -> Path:
         """Saves working state to .agents/memory/STATE.md with secure permissions."""
-        self.memory_dir.mkdir(parents=True, exist_ok=True)
-        try:
-            self.memory_dir.chmod(0o700)
-        except Exception:
-            pass
-
+        secure_mkdir(self.memory_dir)
         state_file = self.memory_dir / "STATE.md"
-        content = self.snapshot(goal)
-        state_file.write_text(content, encoding="utf-8")
-        try:
-            state_file.chmod(0o600)
-        except Exception:
-            pass
+        secure_write(state_file, self.snapshot(goal))
         return state_file

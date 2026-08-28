@@ -103,7 +103,7 @@ class TestContextModule(unittest.TestCase):
         """Regression test ensuring 100% symbol recall and > 65% compression on standard testset."""
         from modules.context.benchmarker import ContextBenchmarker
         stats = ContextBenchmarker.run_golden_benchmark()
-        self.assertGreaterEqual(stats["raw_files"], 6)
+        self.assertGreaterEqual(stats["raw_files"], 10)
         self.assertGreater(stats["expected_symbols_count"], 20)
         self.assertEqual(stats["recall_pct"], 100.0, f"Missing symbols: {stats.get('missing_symbols')}")
         self.assertGreater(stats["reduction_pct"], 65.0)

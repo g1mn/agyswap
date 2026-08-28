@@ -32,7 +32,7 @@
 ### 🌐 Interactive Architecture Dashboard & Token Playground
 For a live, interactive visualization of account slots, switching sequences, and a **real-time token compression playground**:
 - **1-Click CLI Open**: Run `agyswap viz --open` to view your local account status in your default browser (saved in isolated `~/.agy-swap/dashboard.html` with Mode `0600`, completely git-clean).
-- **Online Demo & Token Playground**: Hosted on GitHub Pages at [https://g1mn.github.io/agyswap](https://g1mn.github.io/agyswap) (Includes Interactive Token ROI Calculator & Multi-language AST Split Viewer).
+- **Online Demo & Token Playground**: Hosted on GitHub Pages at [https://g1mn.github.io/agyswap](https://g1mn.github.io/agyswap) (Includes Interactive Token ROI Calculator & a 9-language AST Split Viewer — Python, TypeScript, Go, Rust, Java, C, C++, Header, Shell).
 
 ---
 
@@ -48,8 +48,9 @@ For a live, interactive visualization of account slots, switching sequences, and
 - ⚠️ **30-Minute Expiry Warnings**: Proactively highlights expiring credentials with `⚠️ Soon`.
 - 🔍 **`health` Dashboard**: Instant summary of token validities, relative expiration times, and slot mappings.
 - 🛡️ **`audit` Command**: Verifies and auto-corrects filesystem permissions across all credential stores.
-- 🧠 **Context & AST Repo-Map (`ctx`)**: **94.2% Token Compression (~27k tokens saved/session)** via pure AST skeletons and lightweight state persistence.
+- 🧠 **Context & AST Repo-Map (`ctx`)**: **94.2% Token Compression (~32k tokens saved/session)** via pure AST skeletons and lightweight state persistence.
 - 📊 **Real-time Token Benchmarking (`ctx bench`)**: Built-in visual terminal cards, Markdown tables (`-md`), and JSON metrics for tracking token efficiency.
+- 🏆 **Golden Quality Benchmark (`ctx bench --golden`)**: Multi-language oracle regression suite (Python, TypeScript/TSX, Go, Rust, Java, C, C++, Shell) — enforces 100% symbol-recall on every release.
 - 🏷️ **Account Aliases**: Assign meaningful aliases (`main`, `work`, `dev`) for fast switching.
 - 📦 **Backup & Migration (`export`/`import`)**: Migrate slot configurations across machines (live secrets excluded).
 - 🎯 **`--dry-run` Previews**: Non-destructive preview mode for `switch`, `remove`, and `sync`.
@@ -67,25 +68,46 @@ For a live, interactive visualization of account slots, switching sequences, and
 
 ```text
 ┌─────────────────────────────────────────────────────────────┐
-│ 📊 agyswap Context Compression Benchmark                     │
+│ 📊 agyswap Context Compression Benchmark                    │
 ├─────────────────────────────────────────────────────────────┤
-│  Indexed Files      : 9                                     │
-│  Raw Codebase Lines : 2,542 lines (102,907 chars)           │
-│  Raw Token Footprint: ~29,016 tokens                        │
+│  Indexed Files      : 20                                    │
+│  Raw Codebase Lines : 3,101 lines (123,082 chars)           │
+│  Raw Token Footprint: ~34,189 tokens                        │
 ├─────────────────────────────────────────────────────────────┤
-│  Repo-Map Lines     : 110 lines                             │
-│  Repo-Map Tokens    : ~1,673 / 2,000 tokens                 │
-│  Saved Tokens / Run : ~27,343 tokens                        │
+│  Repo-Map Lines     : 135 lines                             │
+│  Repo-Map Tokens    : ~1,995 / 2,000 tokens                 │
+│  Saved Tokens / Run : ~32,194 tokens                        │
 ├─────────────────────────────────────────────────────────────┤
-│  Compression Rate   : [██████████████████░░]  94.2% │
+│  Compression Rate   : [██████████████████░░]  94.2%         │
 └─────────────────────────────────────────────────────────────┘
 ```
 
 | Scenario | Naive Exploration | `agyswap ctx` (AST Map + Firewall) | Net Savings |
 | :--- | :---: | :---: | :---: |
-| **Codebase Discovery** | Full files read (`~29.0k tokens`) | `REPO_MAP.md` single load (`~1.6k tokens`) | **🔥 94.2% Saved** |
-| **Session Reset Recovery** | Re-read raw files (`~29.0k tokens`) | `STATE.md` snapshot load (`~100 tokens`) | **⚡ 99.6% Saved** |
-| **10 Iteration Sessions** | ~290,000 tokens ($0.87+) | ~17,000 tokens ($0.05) | **16x Cost & Rate-Limit Savings** |
+| **Codebase Discovery** | Full files read (`~34.2k tokens`) | `REPO_MAP.md` single load (`~2.0k tokens`) | **🔥 94.2% Saved** |
+| **Session Reset Recovery** | Re-read raw files (`~34.2k tokens`) | `STATE.md` snapshot load (`< 300 tokens`) | **⚡ 99.6% Saved** |
+| **10 Iteration Sessions** | ~342,000 tokens ($1.03+) | ~20,000 tokens ($0.06) | **17x Cost & Rate-Limit Savings** |
+
+### 🏆 Golden Quality Benchmark (`agyswap ctx bench --golden`)
+
+An oracle regression suite bundled in `tests/fixtures/golden_repo/` — a fixed, multi-language fixture set with a `metadata.json` checklist of expected symbols. Every release must extract **100% of them** to pass, guarding against silent AST/regex regressions across languages:
+
+```text
+┌─────────────────────────────────────────────────────────────┐
+│ 🏆 agyswap Golden Quality & Context Benchmark Monitor       │
+├─────────────────────────────────────────────────────────────┤
+│  Standard Fixtures  : 11 files (323 lines)                  │
+│  Raw Code Footprint : ~2,136 tokens                         │
+│  Repo-Map Size      : ~704 tokens                           │
+├─────────────────────────────────────────────────────────────┤
+│  Token Compression  :  67.0% 🟢                             │
+│  Symbol Recall      : 100.0% (36/36 symbols) 🟢             │
+│  Information Density:  51.1 symbols / 1k Tokens 🟢          │
+│  AST Parsing Latency:  1.90 ms ⚡                           │
+└─────────────────────────────────────────────────────────────┘
+```
+
+Covers **10 file extensions across 8 languages** — Python, TypeScript (+ TSX), Go, Rust, Java, C, C++, and Shell — using native `ast` parsing for Python and hardened regex extractors (with control-flow/keyword guards) for the rest.
 
 ### 🚀 Context Management Workflow
 
@@ -94,11 +116,15 @@ For a live, interactive visualization of account slots, switching sequences, and
 agyswap ctx bench              # Visual ASCII report
 agyswap ctx bench -md          # Markdown table format (for PRs / docs)
 agyswap ctx bench --json       # JSON format for CI/CD pipelines
+agyswap ctx bench --golden     # Multi-language oracle regression (100% recall gate)
 
 # 2. Inspect compact AST skeleton of the codebase
 agyswap ctx map --budget 2000
 
-# 3. Synchronize Repo-Map & Working State before resetting an agy chat
+# 3. Snapshot working state (branch, staged/modified/untracked files, diff stat)
+agyswap ctx state
+
+# 4. Synchronize Repo-Map & Working State before resetting an agy chat
 agyswap ctx clean
 /clear                         # Run in agy: resume instantly with zero context loss!
 ```

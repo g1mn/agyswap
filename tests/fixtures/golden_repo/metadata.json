@@ -25,6 +25,17 @@
     "trait BlockDriver",
     "pub async fn init_driver",
     "deploy_production()",
-    "rollback_release()"
+    "rollback_release()",
+    "public class CacheService",
+    "public Object get(String key)",
+    "private synchronized boolean evictExpired()",
+    "struct MemBlock",
+    "static inline int is_free(struct MemBlock *b)",
+    "int pool_alloc(size_t size)",
+    "class RingBufferView",
+    "unsigned int capacity() const",
+    "virtual bool isEmpty() const",
+    "struct RingBuffer",
+    "int ring_push(struct RingBuffer *rb, unsigned char byte);"
   ]
 }

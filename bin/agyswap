@@ -53,7 +53,7 @@ if sys.platform != "darwin":
     sys.exit(1)
 
 # ── Version ──────────────────────────────────────────────────────────────────
-VERSION = "0.3.0"
+VERSION = "0.4.0"
 
 # ── Constants & Paths ────────────────────────────────────────────────────────
 BASE_DIR = Path.home() / ".agy-swap"
@@ -1598,19 +1598,27 @@ complete -c agyswap -n '__fish_seen_subcommand_from sync' -l all -d 'Check sync 
         sys.exit(1)
 
 # ── Context Subcommand Handler ───────────────────────────────────────────────
+def _positive_int(value):
+    """argparse type= validator: rejects zero/negative --budget values with a clean usage error."""
+    ivalue = int(value)
+    if ivalue <= 0:
+        raise argparse.ArgumentTypeError(f"must be a positive integer, got {value}")
+    return ivalue
+
+
 def cmd_context(args):
     """Handles 'agyswap context' (or 'agyswap ctx') subcommands."""
     subaction = getattr(args, "ctx_action", None) or "map"
-    
+
     try:
         from modules.context.repomap import RepoMapper
         from modules.context.budgeter import TokenBudgeter
-        from modules.context.state import StateManager
+        from modules.context.state import StateManager, secure_mkdir, secure_write
     except ImportError as e:
         print(red(f"✗ Failed to load context sub-module: {e}"))
         sys.exit(1)
 
-    root_dir = Path(getattr(args, "dir", "."))
+    root_dir = Path(getattr(args, "dir", None) or ".")
 
     if subaction == "map":
         mapper = RepoMapper(root_dir=root_dir)
@@ -1621,17 +1629,9 @@ def cmd_context(args):
 
         if getattr(args, "save", False):
             out_dir = root_dir / ".agents" / "memory"
-            out_dir.mkdir(parents=True, exist_ok=True)
-            try:
-                out_dir.chmod(0o700)
-            except Exception:
-                pass
+            secure_mkdir(out_dir)
             out_file = out_dir / "REPO_MAP.md"
-            out_file.write_text(trimmed_map, encoding="utf-8")
-            try:
-                out_file.chmod(0o600)
-            except Exception:
-                pass
+            secure_write(out_file, trimmed_map)
             print(green(f"✓ Repo-Map saved to {out_file} (~{est_tokens:,} tokens)"))
         else:
             print(trimmed_map)
@@ -1656,20 +1656,11 @@ def cmd_context(args):
         repo_map = mapper.generate_map()
         budget = getattr(args, "budget", 2000)
         trimmed_map = TokenBudgeter.trim_to_budget(repo_map, max_tokens=budget)
-        
-        out_dir = root_dir / ".agents" / "memory"
-        out_dir.mkdir(parents=True, exist_ok=True)
-        try:
-            out_dir.chmod(0o700)
-        except Exception:
-            pass
 
+        out_dir = root_dir / ".agents" / "memory"
+        secure_mkdir(out_dir)
         map_file = out_dir / "REPO_MAP.md"
-        map_file.write_text(trimmed_map, encoding="utf-8")
-        try:
-            map_file.chmod(0o600)
-        except Exception:
-            pass
+        secure_write(map_file, trimmed_map)
 
         state_mgr = StateManager(root_dir=root_dir)
         state_mgr.save_snapshot(goal=getattr(args, "goal", "Context Compaction & Session Reset"))
@@ -1681,7 +1672,7 @@ def cmd_context(args):
         budget = getattr(args, "budget", 2000)
 
         if getattr(args, "golden", False):
-            stats = ContextBenchmarker.run_golden_benchmark()
+            stats = ContextBenchmarker.run_golden_benchmark(fixture_dir=getattr(args, "dir", None), budget=budget)
             if getattr(args, "json", False):
                 print(ContextBenchmarker.render_json(stats))
             elif getattr(args, "markdown", False):
@@ -1806,7 +1797,7 @@ def main():
     
     p_ctx_map = ctx_sub.add_parser("map", help="Generate compact AST Repo Map")
     p_ctx_map.add_argument("--dir", default=".", help="Target root directory (default: .)")
-    p_ctx_map.add_argument("--budget", type=int, default=2000, help="Max token budget (default: 2000)")
+    p_ctx_map.add_argument("--budget", type=_positive_int, default=2000, help="Max token budget (default: 2000)")
     p_ctx_map.add_argument("--save", action="store_true", help="Save directly to .agents/memory/REPO_MAP.md")
 
     p_ctx_state = ctx_sub.add_parser("state", help="Generate working state snapshot")
@@ -1816,12 +1807,12 @@ def main():
 
     p_ctx_clean = ctx_sub.add_parser("clean", help="Sync Repo-Map & State to .agents/memory/ before '/clear'")
     p_ctx_clean.add_argument("--dir", default=".", help="Target root directory (default: .)")
-    p_ctx_clean.add_argument("--budget", type=int, default=2000, help="Max token budget (default: 2000)")
+    p_ctx_clean.add_argument("--budget", type=_positive_int, default=2000, help="Max token budget (default: 2000)")
     p_ctx_clean.add_argument("--goal", default="Context Compaction & Session Reset", help="Current goal")
 
     p_ctx_bench = ctx_sub.add_parser("bench", aliases=["stats"], help="Measure codebase token footprint and compression efficiency")
-    p_ctx_bench.add_argument("--dir", default=".", help="Target root directory (default: .)")
-    p_ctx_bench.add_argument("--budget", type=int, default=2000, help="Max token budget (default: 2000)")
+    p_ctx_bench.add_argument("--dir", default=None, help="Target root directory (default: . ; with --golden, overrides the built-in Golden Repo fixture)")
+    p_ctx_bench.add_argument("--budget", type=_positive_int, default=2000, help="Max token budget (default: 2000)")
     p_ctx_bench.add_argument("--golden", action="store_true", help="Run benchmark against standard multi-language Golden Repo")
     p_ctx_bench.add_argument("--json", action="store_true", help="Output benchmark metrics in JSON format")
     p_ctx_bench.add_argument("-md", "--markdown", action="store_true", help="Output benchmark metrics in Markdown table format")

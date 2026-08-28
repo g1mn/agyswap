@@ -12,26 +12,42 @@ import re
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 
+# Control-flow keywords excluded from C/C++ function-signature matching so that
+# statements like "if (x) {" or "return foo(x);" are never mistaken for declarations.
+_C_KEYWORDS = r"(?:if|while|for|switch|else|return|do|sizeof|typedef|case|goto|break|continue|default|catch|try|new|delete|throw)"
+# Arg-list content: "::" (qualified names like std::vector) is allowed as a unit, but a
+# lone ":" is not, so a constructor's " : member(x) {}" initializer list can't be
+# mistaken for part of the argument list and swallowed up to its trailing "{".
+_C_ARGS = r"(?:::|[^;{}:])*"
+_C_FUNC_PATTERN = re.compile(
+    rf"^(?!{_C_KEYWORDS}\b)(?:static\s+)?(?:inline\s+)?(?:virtual\s+)?(?:explicit\s+)?"
+    rf"[\w][\w\s\*&:<>,]*?\s[\*&]?(?!{_C_KEYWORDS}\s*\()(\w+)\s*\({_C_ARGS}\)\s*(?:const\s*)?(?:override\s*)?[;{{]"
+)
+
 # Pre-compiled generic regex patterns for maximum performance
 GENERIC_PATTERNS: Dict[str, List[re.Pattern[str]]] = {
     ".js": [
-        re.compile(r"^(?:export\s+)?(?:async\s+)?function\s+(\w+)\s*\("),
+        re.compile(r"^(?:export\s+)?(?:async\s+)?function\s+(\w+)\s*(?:<[^>]*>)?\s*\("),
         re.compile(r"^(?:export\s+)?class\s+(\w+)"),
+        re.compile(r"^(?:export\s+)?const\s+(\w+)\s*=\s*(?:async\s*)?\("),
     ],
     ".ts": [
-        re.compile(r"^(?:export\s+)?(?:async\s+)?function\s+(\w+)\s*\("),
+        re.compile(r"^(?:export\s+)?(?:async\s+)?function\s+(\w+)\s*(?:<[^>]*>)?\s*\("),
         re.compile(r"^(?:export\s+)?class\s+(\w+)"),
         re.compile(r"^(?:export\s+)?interface\s+(\w+)"),
         re.compile(r"^(?:export\s+)?type\s+(\w+)\s*="),
+        re.compile(r"^(?:export\s+)?const\s+(\w+)\s*=\s*(?:async\s*)?\("),
     ],
     ".tsx": [
-        re.compile(r"^(?:export\s+)?(?:async\s+)?function\s+(\w+)\s*\("),
+        re.compile(r"^(?:export\s+)?(?:async\s+)?function\s+(\w+)\s*(?:<[^>]*>)?\s*\("),
         re.compile(r"^(?:export\s+)?class\s+(\w+)"),
         re.compile(r"^(?:export\s+)?interface\s+(\w+)"),
+        re.compile(r"^(?:export\s+)?const\s+(\w+)\s*=\s*(?:async\s*)?\("),
     ],
     ".jsx": [
-        re.compile(r"^(?:export\s+)?(?:async\s+)?function\s+(\w+)\s*\("),
+        re.compile(r"^(?:export\s+)?(?:async\s+)?function\s+(\w+)\s*(?:<[^>]*>)?\s*\("),
         re.compile(r"^(?:export\s+)?class\s+(\w+)"),
+        re.compile(r"^(?:export\s+)?const\s+(\w+)\s*=\s*(?:async\s*)?\("),
     ],
     ".go": [
         re.compile(r"^func\s+(?:\([^)]+\)\s+)?(\w+)\s*\("),
@@ -43,7 +59,23 @@ GENERIC_PATTERNS: Dict[str, List[re.Pattern[str]]] = {
     ],
     ".sh": [
         re.compile(r"^(\w+)\s*\(\)\s*\{"),
-    ]
+    ],
+    ".java": [
+        re.compile(r"^(?:public|private|protected)?\s*(?:static\s+)?(?:final\s+)?(?:abstract\s+)?(?:class|interface|enum)\s+(\w+)"),
+        re.compile(r"^(?:public|private|protected)\s+(?:static\s+)?(?:final\s+)?(?:synchronized\s+)?[\w<>\[\],\.\s]+?\s(\w+)\s*\([^;{]*\)\s*(?:throws\s+[\w,\s]+)?\s*\{"),
+    ],
+    ".c": [
+        re.compile(r"^(?:typedef\s+)?struct\s+(\w+)"),
+        _C_FUNC_PATTERN,
+    ],
+    ".cpp": [
+        re.compile(r"^(?:class|struct)\s+(\w+)"),
+        _C_FUNC_PATTERN,
+    ],
+    ".h": [
+        re.compile(r"^(?:class|struct)\s+(\w+)"),
+        _C_FUNC_PATTERN,
+    ],
 }
 DEFAULT_FALLBACK_PATTERNS = [re.compile(r"^(?:def|class|function|func|fn)\s+(\w+)")]
 
@@ -115,20 +147,55 @@ class RepoMapper:
             res.append(f"  {sym}")
         return "\n".join(res)
 
-    def _format_args(self, args_list: list[ast.arg], is_method: bool = False) -> str:
-        """Formats function arguments with optional type annotations."""
-        formatted = []
-        for a in args_list:
-            if is_method and a.arg in ("self", "cls"):
-                continue
-            if a.annotation and hasattr(ast, "unparse"):
+    def _format_arg(self, a: ast.arg) -> str:
+        if a.annotation and hasattr(ast, "unparse"):
+            try:
+                return f"{a.arg}: {ast.unparse(a.annotation)}"
+            except Exception:
+                pass
+        return a.arg
+
+    def _format_args(self, args: ast.arguments, is_method: bool = False) -> str:
+        """Formats a full signature (positional-only, normal, *args, keyword-only, **kwargs) with optional type annotations."""
+        def is_self_or_cls(a: ast.arg) -> bool:
+            return is_method and a.arg in ("self", "cls")
+
+        posonly = [a for a in args.posonlyargs if not is_self_or_cls(a)]
+        normal = [a for a in args.args if not is_self_or_cls(a)]
+
+        parts = [self._format_arg(a) for a in posonly]
+        if posonly:
+            parts.append("/")
+        parts.extend(self._format_arg(a) for a in normal)
+
+        if args.vararg:
+            parts.append(f"*{self._format_arg(args.vararg)}")
+        elif args.kwonlyargs:
+            parts.append("*")
+        parts.extend(self._format_arg(a) for a in args.kwonlyargs)
+
+        if args.kwarg:
+            parts.append(f"**{self._format_arg(args.kwarg)}")
+
+        return ", ".join(parts)
+
+    def _format_decorators(self, decorator_list: list[ast.expr]) -> str:
+        """Renders every decorator (not just a hardcoded allowlist), so @x.setter / @app.route(...) survive."""
+        if not decorator_list:
+            return ""
+        names = []
+        for d in decorator_list:
+            if hasattr(ast, "unparse"):
                 try:
-                    formatted.append(f"{a.arg}: {ast.unparse(a.annotation)}")
+                    names.append(f"@{ast.unparse(d)}")
+                    continue
                 except Exception:
-                    formatted.append(a.arg)
-            else:
-                formatted.append(a.arg)
-        return ", ".join(formatted)
+                    pass
+            if isinstance(d, ast.Name):
+                names.append(f"@{d.id}")
+            elif isinstance(d, ast.Attribute):
+                names.append(f"@{d.attr}")
+        return (" ".join(names) + " ") if names else ""
 
     def _format_return(self, node: ast.FunctionDef | ast.AsyncFunctionDef) -> str:
         """Formats return type annotation if present."""
@@ -139,6 +206,16 @@ class RepoMapper:
                 pass
         return ""
 
+    def _iter_assign_names(self, target: ast.expr):
+        """Yields every bound name in an assignment target, recursing through tuple/list unpacking."""
+        if isinstance(target, ast.Name):
+            yield target.id
+        elif isinstance(target, (ast.Tuple, ast.List)):
+            for elt in target.elts:
+                yield from self._iter_assign_names(elt)
+        elif isinstance(target, ast.Starred):
+            yield from self._iter_assign_names(target.value)
+
     def _parse_python(self, content: str) -> List[str]:
         """Parse python file using native ast module for 100% precision."""
         symbols = []
@@ -148,8 +225,9 @@ class RepoMapper:
                 # Top-level UPPER_CASE constants
                 if isinstance(node, ast.Assign):
                     for target in node.targets:
-                        if isinstance(target, ast.Name) and target.id.isupper() and not target.id.startswith("_"):
-                            symbols.append(f"const {target.id}")
+                        for name in self._iter_assign_names(target):
+                            if name.isupper() and not name.startswith("_"):
+                                symbols.append(f"const {name}")
 
                 elif isinstance(node, ast.ClassDef):
                     # Class signature
@@ -167,19 +245,14 @@ class RepoMapper:
                     # Class methods
                     for item in node.body:
                         if isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef)):
-                            # Check decorators
-                            dec_prefix = ""
-                            for d in item.decorator_list:
-                                if isinstance(d, ast.Name) and d.id in ("staticmethod", "classmethod", "property"):
-                                    dec_prefix = f"@{d.id} "
-                                    break
-                            args_str = self._format_args(item.args.args, is_method=True)
+                            dec_prefix = self._format_decorators(item.decorator_list)
+                            args_str = self._format_args(item.args, is_method=True)
                             ret_str = self._format_return(item)
                             fn_prefix = "async def" if isinstance(item, ast.AsyncFunctionDef) else "def"
                             symbols.append(f"    {dec_prefix}{fn_prefix} {item.name}({args_str}){ret_str}")
-                            
+
                 elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
-                    args_str = self._format_args(node.args.args, is_method=False)
+                    args_str = self._format_args(node.args, is_method=False)
                     ret_str = self._format_return(node)
                     fn_prefix = "async def" if isinstance(node, ast.AsyncFunctionDef) else "def"
                     doc = ast.get_docstring(node)

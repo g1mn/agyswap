@@ -144,6 +144,11 @@
   @media(max-width: 980px) { .cols { grid-template-columns: 1fr; } }
 
   .rail { position: sticky; top: 20px; display: flex; flex-direction: column; gap: 16px; }
+  /* Single-column mobile layout stacks aside above main as separate grid rows, but a tall
+     sticky rail still pins itself over main's content while main scrolls underneath it
+     (its containing block release point lags far behind the visible viewport) — so drop
+     sticky entirely below the breakpoint where the two-column layout no longer applies. */
+  @media(max-width: 980px) { .rail { position: static; } }
   .panel {
     background: var(--surface);
     border: 1px solid var(--line);
@@ -326,7 +331,7 @@
   .flow-step p { margin: 0; font-size: 12.5px; color: var(--muted); }
 
   /* Tabs */
-  .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin-bottom: 14px; }
+  .tabs { display: flex; flex-wrap: wrap; gap: 4px; border-bottom: 1px solid var(--line); margin-bottom: 14px; }
   .tab-btn {
     padding: 8px 16px;
     background: transparent;
@@ -589,7 +594,7 @@
               <rect class="node-bg" width="320" height="250" rx="10" fill="var(--surface)" stroke="var(--accent)" stroke-width="2"/>
               <path class="node-header" d="M 0 10 Q 0 0 10 0 L 310 0 Q 320 0 320 10 L 320 34 L 0 34 Z" fill="var(--accent-tint)"/>
               <line class="node-header" x1="0" y1="34" x2="320" y2="34" stroke="var(--line)" stroke-width="1"/>
-              <text x="16" y="23" font-size="13.5" font-weight="750" fill="var(--accent)">🔄 agyswap Engine Core (v0.3.0)</text>
+              <text x="16" y="23" font-size="13.5" font-weight="750" fill="var(--accent)">🔄 agyswap Engine Core (v0.4.0)</text>
               
               <text x="16" y="60" font-size="11.5" font-weight="650" fill="var(--ok)">⚡ Native C API Binding</text>
               <text x="30" y="78" font-size="11" font-family="var(--mono)" fill="var(--muted)">SecKeychain APIs (0% argv leak)</text>
@@ -760,8 +765,8 @@ $ agyswap switch 3
             <div class="desc">Imports slot metadata from JSON with automatic slot conflict resolution.</div>
           </div>
           <div class="cmd-card">
-            <div class="sig">agyswap ctx [bench|clean|map]</div>
-            <div class="desc">AST Codebase Mapping &amp; Token Optimizer. <code>bench</code>: measure token compression rate. <code>clean</code>: sync state before /clear.</div>
+            <div class="sig">agyswap ctx [bench|map|state|clean]</div>
+            <div class="desc">AST Codebase Mapping &amp; Token Optimizer. <code>bench [--golden] [--json|-md]</code>: measure compression, or run the 10-language oracle regression. <code>map</code>/<code>state</code>: compact context snapshots. <code>clean</code>: sync both before /clear.</div>
           </div>
           <div class="cmd-card">
             <div class="sig">agyswap completion &lt;shell&gt;</div>
@@ -777,17 +782,17 @@ $ agyswap switch 3
         
         <div class="codeblock" style="margin-bottom:16px">
 ┌─────────────────────────────────────────────────────────────┐
-│ 📊 agyswap Context Compression Benchmark                     │
+│ 📊 agyswap Context Compression Benchmark                    │
 ├─────────────────────────────────────────────────────────────┤
-│  Indexed Files      : 9                                     │
-│  Raw Codebase Lines : 2,542 lines (102,907 chars)           │
-│  Raw Token Footprint: ~29,016 tokens                        │
+│  Indexed Files      : 20                                    │
+│  Raw Codebase Lines : 3,101 lines (123,082 chars)           │
+│  Raw Token Footprint: ~34,189 tokens                        │
 ├─────────────────────────────────────────────────────────────┤
-│  Repo-Map Lines     : 110 lines                             │
-│  Repo-Map Tokens    : ~1,673 / 2,000 tokens                 │
-│  Saved Tokens / Run : ~27,343 tokens                        │
+│  Repo-Map Lines     : 135 lines                             │
+│  Repo-Map Tokens    : ~1,995 / 2,000 tokens                 │
+│  Saved Tokens / Run : ~32,194 tokens                        │
 ├─────────────────────────────────────────────────────────────┤
-│  Compression Rate   : [██████████████████░░]  94.2% │
+│  Compression Rate   : [██████████████████░░]  94.2%         │
 └─────────────────────────────────────────────────────────────┘
         </div>
 
@@ -803,24 +808,42 @@ $ agyswap switch 3
           <tbody>
             <tr>
               <td><b>Codebase Discovery</b></td>
-              <td>Full source read (~29.0k tokens)</td>
-              <td><span class="mono">REPO_MAP.md</span> (~1.6k tokens)</td>
+              <td>Full source read (~34.2k tokens)</td>
+              <td><span class="mono">REPO_MAP.md</span> (~2.0k tokens)</td>
               <td><span style="color:var(--ok);font-weight:700">🔥 94.2% Saved</span></td>
             </tr>
             <tr>
               <td><b>Session Reset Recovery</b></td>
-              <td>Re-read raw files (~29.0k tokens)</td>
-              <td><span class="mono">STATE.md</span> (~100 tokens)</td>
+              <td>Re-read raw files (~34.2k tokens)</td>
+              <td><span class="mono">STATE.md</span> (&lt; 300 tokens)</td>
               <td><span style="color:var(--ok);font-weight:700">⚡ 99.6% Saved</span></td>
             </tr>
             <tr>
               <td><b>10 Agent Sessions</b></td>
-              <td>~290,000 tokens ($0.87+)</td>
-              <td>~17,000 tokens ($0.05)</td>
-              <td><span style="color:var(--accent);font-weight:700">16x Cost / Rate-limit Savings</span></td>
+              <td>~342,000 tokens ($1.03+)</td>
+              <td>~20,000 tokens ($0.06)</td>
+              <td><span style="color:var(--accent);font-weight:700">17x Cost / Rate-limit Savings</span></td>
             </tr>
           </tbody>
         </table>
+
+        <h3 style="margin:20px 0 10px;font-size:14px">🏆 Golden Quality Benchmark — Multi-Language Oracle Regression</h3>
+        <p style="color:var(--muted);font-size:13px;margin-top:0">A fixed fixture set (<span class="mono">tests/fixtures/golden_repo/</span>) with a known symbol checklist — every release must extract <b>100%</b> of them, catching silent AST/regex regressions across languages before they ship.</p>
+        <div class="codeblock" style="margin-bottom:12px">
+┌─────────────────────────────────────────────────────────────┐
+│ 🏆 agyswap Golden Quality &amp; Context Benchmark Monitor       │
+├─────────────────────────────────────────────────────────────┤
+│  Standard Fixtures  : 11 files (323 lines)                  │
+│  Raw Code Footprint : ~2,136 tokens                         │
+│  Repo-Map Size      : ~704 tokens                           │
+├─────────────────────────────────────────────────────────────┤
+│  Token Compression  :  67.0% 🟢                             │
+│  Symbol Recall      : 100.0% (36/36 symbols) 🟢             │
+│  Information Density:  51.1 symbols / 1k Tokens 🟢          │
+│  AST Parsing Latency:  1.90 ms ⚡                           │
+└─────────────────────────────────────────────────────────────┘
+        </div>
+        <p style="color:var(--muted);font-size:12.5px;margin:0">Coverage: <span class="badge">Python</span> <span class="badge">TypeScript</span> <span class="badge">TSX</span> <span class="badge">Go</span> <span class="badge">Rust</span> <span class="badge">Java</span> <span class="badge">C</span> <span class="badge">C++</span> <span class="badge">Shell</span> — native <span class="mono">ast</span> parsing for Python, hardened regex extractors (with control-flow keyword guards) for the rest.</p>
       </section>
 
       <!-- Section F: Interactive Token Playground & Code Split Viewer -->
@@ -851,17 +874,17 @@ $ agyswap switch 3
           <div class="calc-results">
             <div class="calc-res-card">
               <div class="calc-res-k">Token Compression Rate</div>
-              <div class="calc-res-v" style="color:var(--ok)" id="resCompression">94.5%</div>
-              <div class="calc-res-sub">~1,800 vs ~33,000 tokens</div>
+              <div class="calc-res-v" style="color:var(--ok)" id="resCompression">98.3%</div>
+              <div class="calc-res-sub" id="resCompressionSub">~1,950 vs ~115,000 tokens</div>
             </div>
             <div class="calc-res-card">
               <div class="calc-res-k">Monthly Saved Tokens</div>
-              <div class="calc-res-v" style="color:var(--accent)" id="resSavedTokens">1.56M</div>
+              <div class="calc-res-v" style="color:var(--accent)" id="resSavedTokens">5.65M</div>
               <div class="calc-res-sub">Tokens preserved per month</div>
             </div>
             <div class="calc-res-card">
               <div class="calc-res-k">Context Lifespan</div>
-              <div class="calc-res-v" style="color:var(--accent)" id="resLifespan">18x Longer</div>
+              <div class="calc-res-v" style="color:var(--accent)" id="resLifespan">59x Longer</div>
               <div class="calc-res-sub">Before context bloat/rate-limit</div>
             </div>
           </div>
@@ -874,6 +897,10 @@ $ agyswap switch 3
           <button class="tab-btn" data-lang="typescript">TypeScript</button>
           <button class="tab-btn" data-lang="go">Go</button>
           <button class="tab-btn" data-lang="rust">Rust</button>
+          <button class="tab-btn" data-lang="java">Java</button>
+          <button class="tab-btn" data-lang="c">C</button>
+          <button class="tab-btn" data-lang="cpp">C++</button>
+          <button class="tab-btn" data-lang="h">Header</button>
           <button class="tab-btn" data-lang="shell">Shell</button>
         </div>
 
@@ -881,14 +908,14 @@ $ agyswap switch 3
           <div class="split-pane">
             <div class="split-pane-header">
               <span>📄 Raw Full Code (<span id="rawLineCount">50 lines</span>)</span>
-              <span class="badge" style="background:var(--warn);color:#000">~550 Tokens</span>
+              <span class="badge" id="rawTokenBadge" style="background:var(--warn);color:#000">~550 Tokens</span>
             </div>
             <pre class="split-code" id="rawCodePane"></pre>
           </div>
           <div class="split-pane">
             <div class="split-pane-header">
               <span>🗺️ AST Extracted Skeleton (<span id="mapLineCount">7 lines</span>)</span>
-              <span class="badge" style="background:var(--ok);color:#fff">~75 Tokens (86% Saved)</span>
+              <span class="badge" id="mapTokenBadge" style="background:var(--ok);color:#fff">~75 Tokens (86% Saved)</span>
             </div>
             <pre class="split-code" id="mapCodePane"></pre>
           </div>
@@ -1372,6 +1399,97 @@ pub async fn init_driver(path: &str) -> Option<StorageBlock> {
   trait BlockDriver
   pub async fn init_driver(path: &str)`
   },
+  java: {
+    raw: `package com.example.backend;
+
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
+public class CacheService {
+    private final Map<String, Object> store = new ConcurrentHashMap<>();
+
+    public static void main(String[] args) {
+        System.out.println("cache online");
+    }
+
+    public Object get(String key) {
+        return store.get(key);
+    }
+
+    private synchronized boolean evictExpired() {
+        return true;
+    }
+}`,
+    map: `📁 \`backend/cache_service.java\` (20 lines):
+  public class CacheService
+  public static void main(String[] args)
+  public Object get(String key)
+  private synchronized boolean evictExpired()`
+  },
+  c: {
+    raw: `#include <stdlib.h>
+
+struct MemBlock {
+    void *ptr;
+    size_t size;
+};
+
+static inline int is_free(struct MemBlock *b) {
+    return b->ptr == NULL;
+}
+
+int pool_alloc(size_t size) {
+    if (size == 0) {
+        return -1;
+    }
+    return 0;
+}`,
+    map: `📁 \`systems/mem_pool.c\` (17 lines):
+  struct MemBlock
+  static inline int is_free(struct MemBlock *b)
+  int pool_alloc(size_t size)`
+  },
+  cpp: {
+    raw: `#include "ring_buffer.h"
+
+class RingBufferView {
+public:
+    explicit RingBufferView(RingBuffer *rb) : rb_(rb) {}
+
+    unsigned int capacity() const {
+        return rb_->capacity;
+    }
+
+    virtual bool isEmpty() const {
+        return rb_->capacity == 0;
+    }
+
+private:
+    RingBuffer *rb_;
+};`,
+    map: `📁 \`systems/ring_buffer.cpp\` (17 lines):
+  class RingBufferView
+  unsigned int capacity() const
+  virtual bool isEmpty() const`
+  },
+  h: {
+    raw: `#ifndef RING_BUFFER_H
+#define RING_BUFFER_H
+
+struct RingBuffer {
+    unsigned char *data;
+    unsigned int capacity;
+};
+
+int ring_push(struct RingBuffer *rb, unsigned char byte);
+int ring_pop(struct RingBuffer *rb);
+
+#endif`,
+    map: `📁 \`systems/ring_buffer.h\` (12 lines):
+  struct RingBuffer
+  int ring_push(struct RingBuffer *rb, unsigned char byte);
+  int ring_pop(struct RingBuffer *rb);`
+  },
   shell: {
     raw: `#!/usr/bin/env bash
 set -euo pipefail
@@ -1396,12 +1514,22 @@ function renderSplitViewer(lang) {
   var mapPane = document.getElementById('mapCodePane');
   var rawCount = document.getElementById('rawLineCount');
   var mapCount = document.getElementById('mapLineCount');
+  var rawBadge = document.getElementById('rawTokenBadge');
+  var mapBadge = document.getElementById('mapTokenBadge');
 
   if (rawPane && mapPane) {
     rawPane.textContent = data.raw;
     mapPane.textContent = data.map;
     if (rawCount) rawCount.textContent = data.raw.split('\n').length + ' lines';
     if (mapCount) mapCount.textContent = data.map.split('\n').length + ' lines';
+
+    // Same ~3.6 chars/token heuristic as TokenBudgeter.estimate_tokens, so the
+    // badges stay accurate for whichever language tab is selected (not frozen on Python).
+    var rawTok = Math.max(1, Math.round(data.raw.length / 3.6));
+    var mapTok = Math.max(1, Math.round(data.map.length / 3.6));
+    var savedPct = Math.round((1 - mapTok / rawTok) * 100);
+    if (rawBadge) rawBadge.textContent = '~' + rawTok.toLocaleString() + ' Tokens';
+    if (mapBadge) mapBadge.textContent = '~' + mapTok.toLocaleString() + ' Tokens (' + savedPct + '% Saved)';
   }
 }
 

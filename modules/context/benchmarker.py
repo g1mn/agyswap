@@ -6,10 +6,31 @@ Zero external dependencies.
 from __future__ import annotations
 
 import os
+import re
+import unicodedata
 from pathlib import Path
 from typing import Dict, Any, List
 from modules.context.repomap import RepoMapper
 from modules.context.budgeter import TokenBudgeter
+
+BOX_WIDTH = 61  # interior column width of the report boxes, between the │ borders
+
+
+def _visible_width(text: str) -> int:
+    """Terminal column width of text, counting wide/emoji glyphs as 2 columns (len() undercounts them as 1)."""
+    width = 0
+    for ch in text:
+        if unicodedata.east_asian_width(ch) in ("W", "F") or 0x1F300 <= ord(ch) <= 0x1FAFF or 0x2600 <= ord(ch) <= 0x27BF:
+            width += 2
+        else:
+            width += 1
+    return width
+
+
+def _box_line(content: str, width: int = BOX_WIDTH) -> str:
+    """Pads content to an exact visible width and wraps it with box-drawing borders."""
+    pad = max(0, width - _visible_width(content))
+    return f"│{content}{' ' * pad}│"
 
 
 class ContextBenchmarker:
@@ -96,20 +117,21 @@ class ContextBenchmarker:
         map_tokens_str = f"~{stats['map_tokens']:,} / {stats['budget']:,} tokens"
         savings_str = f"~{stats['savings_tokens']:,} tokens"
 
+        border = "─" * BOX_WIDTH
         lines = [
-            "┌─────────────────────────────────────────────────────────────┐",
-            "│ 📊 agyswap Context Compression Benchmark                     │",
-            "├─────────────────────────────────────────────────────────────┤",
-            f"│  Indexed Files      : {stats['raw_files']:<38}│",
-            f"│  Raw Codebase Lines : {raw_lines_str:<38}│",
-            f"│  Raw Token Footprint: {raw_tokens_str:<38}│",
-            "├─────────────────────────────────────────────────────────────┤",
-            f"│  Repo-Map Lines     : {map_lines_str:<38}│",
-            f"│  Repo-Map Tokens    : {map_tokens_str:<38}│",
-            f"│  Saved Tokens / Run : {savings_str:<38}│",
-            "├─────────────────────────────────────────────────────────────┤",
-            f"│  Compression Rate   : [{bar}] {red_pct:>5.1f}% │",
-            "└─────────────────────────────────────────────────────────────┘",
+            f"┌{border}┐",
+            _box_line(" 📊 agyswap Context Compression Benchmark"),
+            f"├{border}┤",
+            _box_line(f"  Indexed Files      : {stats['raw_files']}"),
+            _box_line(f"  Raw Codebase Lines : {raw_lines_str}"),
+            _box_line(f"  Raw Token Footprint: {raw_tokens_str}"),
+            f"├{border}┤",
+            _box_line(f"  Repo-Map Lines     : {map_lines_str}"),
+            _box_line(f"  Repo-Map Tokens    : {map_tokens_str}"),
+            _box_line(f"  Saved Tokens / Run : {savings_str}"),
+            f"├{border}┤",
+            _box_line(f"  Compression Rate   : [{bar}] {red_pct:>5.1f}%"),
+            f"└{border}┘",
         ]
 
         if stats["lang_stats"]:
@@ -124,7 +146,8 @@ class ContextBenchmarker:
     def render_json(stats: Dict[str, Any]) -> str:
         """Renders benchmark statistics in JSON format for CI/CD pipelines."""
         import json
-        return json.dumps(stats, indent=2)
+        public_stats = {k: v for k, v in stats.items() if not k.startswith("_")}
+        return json.dumps(public_stats, indent=2)
 
     @staticmethod
     def render_markdown(stats: Dict[str, Any]) -> str:
@@ -155,7 +178,7 @@ class ContextBenchmarker:
         return "\n".join(lines)
 
     @classmethod
-    def run_golden_benchmark(cls, fixture_dir: str | Path | None = None) -> Dict[str, Any]:
+    def run_golden_benchmark(cls, fixture_dir: str | Path | None = None, budget: int = 2000) -> Dict[str, Any]:
         """Runs benchmark against fixed multi-language Golden Repo and measures symbol recall."""
         import json
         import time
@@ -181,7 +204,7 @@ class ContextBenchmarker:
 
         bench = cls(root_dir=fixture_path)
         start_time = time.perf_counter()
-        stats = bench.run_benchmark(budget=2000)
+        stats = bench.run_benchmark(budget=budget)
         latency_ms = (time.perf_counter() - start_time) * 1000.0
 
         repo_map = stats.pop("_raw_map", "")
@@ -189,7 +212,15 @@ class ContextBenchmarker:
         matched = []
         missing = []
         for sym in expected_symbols:
-            if sym in repo_map:
+            # A symbol ending mid-identifier (e.g. "class ApiClient") must not match a
+            # renamed "class ApiClientV2" that merely starts with it, so require a
+            # non-word boundary right after it. Symbols intentionally truncated at a
+            # non-word char (e.g. "func NewRouter(") are fine as plain substrings.
+            if sym and re.match(r"\w", sym[-1]):
+                found = re.search(re.escape(sym) + r"(?!\w)", repo_map) is not None
+            else:
+                found = sym in repo_map
+            if found:
                 matched.append(sym)
             else:
                 missing.append(sym)
@@ -220,19 +251,20 @@ class ContextBenchmarker:
         matched = stats.get("matched_symbols_count", 0)
         total = stats.get("expected_symbols_count", 0)
 
+        border = "─" * BOX_WIDTH
         lines = [
-            "┌─────────────────────────────────────────────────────────────┐",
-            "│ 🏆 agyswap Golden Quality & Context Benchmark Monitor       │",
-            "├─────────────────────────────────────────────────────────────┤",
-            f"│  Standard Fixtures  : {stats['raw_files']} files ({stats['raw_lines']:,} lines)              │",
-            f"│  Raw Code Footprint : ~{stats['raw_tokens']:,} tokens                            │",
-            f"│  Repo-Map Size      : ~{stats['map_tokens']:,} tokens                            │",
-            "├─────────────────────────────────────────────────────────────┤",
-            f"│  Token Compression  : {red_pct:>5.1f}% 🟢                            │",
-            f"│  Symbol Recall      : {rec_pct:>5.1f}% ({matched}/{total} symbols) 🟢{' ' * max(0, 16 - len(f'({matched}/{total} symbols)'))}│",
-            f"│  Information Density: {density:>5.1f} symbols / 1k Tokens 🟢          │",
-            f"│  AST Parsing Latency: {latency:>5.2f} ms ⚡                            │",
-            "└─────────────────────────────────────────────────────────────┘",
+            f"┌{border}┐",
+            _box_line(" 🏆 agyswap Golden Quality & Context Benchmark Monitor"),
+            f"├{border}┤",
+            _box_line(f"  Standard Fixtures  : {stats['raw_files']} files ({stats['raw_lines']:,} lines)"),
+            _box_line(f"  Raw Code Footprint : ~{stats['raw_tokens']:,} tokens"),
+            _box_line(f"  Repo-Map Size      : ~{stats['map_tokens']:,} tokens"),
+            f"├{border}┤",
+            _box_line(f"  Token Compression  : {red_pct:>5.1f}% 🟢"),
+            _box_line(f"  Symbol Recall      : {rec_pct:>5.1f}% ({matched}/{total} symbols) 🟢"),
+            _box_line(f"  Information Density: {density:>5.1f} symbols / 1k Tokens 🟢"),
+            _box_line(f"  AST Parsing Latency: {latency:>5.2f} ms ⚡"),
+            f"└{border}┘",
         ]
 
         missing = stats.get("missing_symbols", [])

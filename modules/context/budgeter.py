@@ -22,13 +22,27 @@ class TokenBudgeter:
             return text
 
         lines = text.splitlines()
+        max_chars = max(0, int(max_tokens * 3.6))
+
+        def banner(remaining: int) -> str:
+            full = f"\n... [Truncated {remaining} lines to fit {max_tokens} token budget] ..."
+            if len(full) <= max_chars:
+                return full
+            short = "\n...[truncated]..."
+            return short if len(short) <= max_chars else ""
+
+        # Reserve the banner's worst-case width up front (using the full line count as an
+        # upper bound on "remaining", since remaining can only have fewer digits) so the
+        # banner actually appended below never pushes the result past max_chars.
+        content_budget = max(0, max_chars - len(banner(len(lines))))
+
         truncated_lines = []
         accumulated_chars = 0
-        max_chars = int(max_tokens * 3.6)
-
         for line in lines:
-            if accumulated_chars + len(line) + 1 > max_chars:
-                truncated_lines.append(f"\n... [Truncated {len(lines) - len(truncated_lines)} lines to fit {max_tokens} token budget] ...")
+            if accumulated_chars + len(line) + 1 > content_budget:
+                trailer = banner(len(lines) - len(truncated_lines))
+                if trailer:
+                    truncated_lines.append(trailer)
                 break
             truncated_lines.append(line)
             accumulated_chars += len(line) + 1
