@@ -484,7 +484,7 @@
       <div>
         <div class="eyebrow">agyswap • Architecture &amp; Lifecycle Map</div>
         <h1>agyswap <span class="sub">— Antigravity CLI Account Switcher</span></h1>
-        <p class="lede">Per-session account isolation · Zero-interaction token rotation · One-command session resume. Powered by native macOS Keychain with zero external dependencies.</p>
+        <p class="lede">Per-session account isolation · Zero-interaction token rotation · One-command session resume. Powered by native macOS Keychain, with a live TUI dashboard and Gemini quota tracking on top.</p>
       </div>
     </div>
     <button id="themeBtn" style="padding:7px 14px;background:var(--surface);border:1px solid var(--line);border-radius:6px;cursor:pointer;color:var(--ink);font-family:var(--mono);font-size:12px;font-weight:600">🌓 Theme</button>
@@ -523,6 +523,7 @@
           <button class="preset-btn active" data-preset="all">🌐 Full System Architecture</button>
           <button class="preset-btn" data-preset="keychain">🔐 Keychain I/O &amp; C API</button>
           <button class="preset-btn" data-preset="switch">⚡ Account Switch Sequence</button>
+          <button class="preset-btn" data-preset="tui">🖥️ Live TUI Dashboard Path</button>
           <button class="preset-btn" data-preset="userinfo">👤 Google UserInfo Flow</button>
         </div>
       </div>
@@ -589,12 +590,22 @@
               <text x="16" y="150" font-size="10" font-family="var(--mono)" fill="var(--faint)">zsh · bash · fish</text>
             </g>
 
+            <!-- Node 1b: Live TUI Dashboard -->
+            <g class="svg-node" id="node-tui" transform="translate(30, 335)">
+              <rect class="node-bg" width="200" height="120" rx="8" fill="var(--surface)" stroke="var(--line)" stroke-width="1.5"/>
+              <text x="16" y="26" font-size="13" font-weight="700" fill="var(--ink)">🖥️ Live TUI Dashboard</text>
+              <text x="16" y="50" font-size="11" font-family="var(--mono)" fill="var(--accent)">$ agyswap tui</text>
+              <text x="16" y="70" font-size="11" font-family="var(--mono)" fill="var(--accent)">$ agyswap watch</text>
+              <text x="16" y="92" font-size="10.5" font-family="var(--mono)" fill="var(--muted)">3s poll · rich+textual</text>
+              <text x="16" y="110" font-size="10" font-family="var(--mono)" fill="var(--faint)">own safety layer (actions.py)</text>
+            </g>
+
             <!-- Node 2: agyswap Engine Core -->
             <g class="svg-node" id="node-core" transform="translate(290, 110)">
-              <rect class="node-bg" width="320" height="250" rx="10" fill="var(--surface)" stroke="var(--accent)" stroke-width="2"/>
+              <rect class="node-bg" width="320" height="296" rx="10" fill="var(--surface)" stroke="var(--accent)" stroke-width="2"/>
               <path class="node-header" d="M 0 10 Q 0 0 10 0 L 310 0 Q 320 0 320 10 L 320 34 L 0 34 Z" fill="var(--accent-tint)"/>
               <line class="node-header" x1="0" y1="34" x2="320" y2="34" stroke="var(--line)" stroke-width="1"/>
-              <text x="16" y="23" font-size="13.5" font-weight="750" fill="var(--accent)">🔄 agyswap Engine Core (v0.4.0)</text>
+              <text x="16" y="23" font-size="13.5" font-weight="750" fill="var(--accent)">🔄 agyswap Engine Core (v0.5.0)</text>
               
               <text x="16" y="60" font-size="11.5" font-weight="650" fill="var(--ok)">⚡ Native C API Binding</text>
               <text x="30" y="78" font-size="11" font-family="var(--mono)" fill="var(--muted)">SecKeychain APIs (0% argv leak)</text>
@@ -608,7 +619,10 @@
               <text x="16" y="198" font-size="11.5" font-weight="650" fill="var(--ink)">🌐 Google UserInfo &amp; JWT Claims</text>
               <text x="30" y="216" font-size="11" font-family="var(--mono)" fill="var(--muted)">Offline parsing + Bearer API</text>
 
-              <text x="16" y="244" font-size="10" font-family="var(--mono)" fill="var(--faint)">Zero Dependencies · Pure Python 3</text>
+              <text x="16" y="244" font-size="11.5" font-weight="650" fill="var(--ink)">📊 Quota Cache &amp; TUI Safety Layer</text>
+              <text x="30" y="262" font-size="11" font-family="var(--mono)" fill="var(--muted)">modules/quota.py + actions.py</text>
+
+              <text x="16" y="288" font-size="10" font-family="var(--mono)" fill="var(--faint)">Pure Python 3 · rich+textual for tui/watch only</text>
             </g>
 
             <!-- Node 3: macOS Keychain -->
@@ -631,24 +645,26 @@
             <g class="svg-node" id="node-storage" transform="translate(670, 270)">
               <rect class="node-bg" width="260" height="95" rx="8" fill="var(--surface)" stroke="var(--line)" stroke-width="1.5"/>
               <text x="16" y="26" font-size="13" font-weight="700" fill="var(--ink)">📁 Local Slot Store (0600)</text>
-              <text x="16" y="48" font-size="11" font-family="var(--mono)" fill="var(--ink)">~/.agy-swap/slots/slot-*.json</text>
+              <text x="16" y="48" font-size="11" font-family="var(--mono)" fill="var(--ink)">~/.agyswap/slots/slot-*.json</text>
               <text x="16" y="66" font-size="11" font-family="var(--mono)" fill="var(--muted)">config.json + rolling backups</text>
               <text x="16" y="84" font-size="10.5" font-family="var(--mono)" fill="var(--faint)">.agyswap.lock (fcntl barrier)</text>
             </g>
 
-            <!-- Node 6: Google UserInfo API -->
+            <!-- Node 6: Google UserInfo & Quota API -->
             <g class="svg-node" id="node-google" transform="translate(670, 395)">
-              <rect class="node-bg" width="260" height="60" rx="8" fill="var(--accent-tint)" stroke="var(--accent)" stroke-width="1.2"/>
-              <text x="16" y="24" font-size="12.5" font-weight="700" fill="var(--accent)">🌐 Google OAuth Endpoints</text>
-              <text x="16" y="44" font-size="11" font-family="var(--mono)" fill="var(--muted)">oauth2/v3/userinfo &amp; token</text>
+              <rect class="node-bg" width="260" height="78" rx="8" fill="var(--accent-tint)" stroke="var(--accent)" stroke-width="1.2"/>
+              <text x="16" y="22" font-size="12.5" font-weight="700" fill="var(--accent)">🌐 Google OAuth &amp; Quota</text>
+              <text x="16" y="42" font-size="11" font-family="var(--mono)" fill="var(--muted)">oauth2/v3/userinfo &amp; token</text>
+              <text x="16" y="62" font-size="10.5" font-family="var(--mono)" fill="var(--muted)">cloudcode-pa.googleapis.com (quota)</text>
             </g>
 
             <!-- Connection Links -->
             <path class="svg-link" id="link-cli-core" d="M 230 235 L 290 235" stroke="var(--accent)" stroke-width="2.5" marker-end="url(#arr-accent)"/>
+            <path class="svg-link" id="link-tui-core" d="M 230 395 L 290 345" stroke="var(--accent)" stroke-width="2" marker-end="url(#arr-accent)"/>
             <path class="svg-link" id="link-core-keychain" d="M 610 160 L 670 85" stroke="var(--ok)" stroke-width="2" marker-end="url(#arr-ok)"/>
             <path class="svg-link" id="link-keychain-agy" d="M 800 120 L 800 150" stroke="var(--muted)" stroke-width="1.8" stroke-dasharray="4 4" marker-end="url(#arr-muted)"/>
             <path class="svg-link" id="link-core-storage" d="M 610 270 L 670 310" stroke="var(--muted)" stroke-width="2" marker-end="url(#arr-muted)"/>
-            <path class="svg-link" id="link-core-google" d="M 580 360 L 670 415" stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="3 3" marker-end="url(#arr-accent)"/>
+            <path class="svg-link" id="link-core-google" d="M 580 406 L 670 425" stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="3 3" marker-end="url(#arr-accent)"/>
           </svg>
         </div>
       </section>
@@ -767,6 +783,22 @@ $ agyswap switch 3
           <div class="cmd-card">
             <div class="sig">agyswap ctx [bench|map|state|clean]</div>
             <div class="desc">AST Codebase Mapping &amp; Token Optimizer. <code>bench [--golden] [--json|-md]</code>: measure compression, or run the 10-language oracle regression. <code>map</code>/<code>state</code>: compact context snapshots. <code>clean</code>: sync both before /clear.</div>
+          </div>
+          <div class="cmd-card">
+            <div class="sig">agyswap alias [slot] [name] [--unset]</div>
+            <div class="desc">Standalone alias management — list every aliased slot, set a new alias, or clear one. Same rename engine as <span class="mono">agyswap rename</span>, exposed as its own command.</div>
+          </div>
+          <div class="cmd-card">
+            <div class="sig">agyswap enable|disable &lt;slot&gt;</div>
+            <div class="desc">Holds a slot out of blind rotation (<span class="mono">agyswap switch</span> with no target) without deleting its credentials. Explicit <span class="mono">agyswap switch &lt;slot&gt;</span> still works on a disabled slot.</div>
+          </div>
+          <div class="cmd-card">
+            <div class="sig">agyswap quota [slot] [--refresh] [--json]</div>
+            <div class="desc">Per-account, per-model Gemini API quota — remaining %, reset time. TTL-cached (45s) and merge-safe; <span class="mono">--refresh</span> bypasses the cache.</div>
+          </div>
+          <div class="cmd-card">
+            <div class="sig">agyswap tui / agyswap watch</div>
+            <div class="desc">Live, keyboard-driven terminal dashboard with real-time per-model quota bars (<span class="mono">rich</span> + <span class="mono">textual</span>). <span class="mono">watch</span> jumps straight into the live-monitor view.</div>
           </div>
           <div class="cmd-card">
             <div class="sig">agyswap completion &lt;shell&gt;</div>
@@ -946,8 +978,8 @@ $ agyswap switch 3
             </tr>
             <tr>
               <td><b>Concurrency Lock</b></td>
-              <td><span class="mono">fcntl.flock</span> on <span class="mono">.agyswap.lock</span></td>
-              <td>Lost updates during concurrent terminal runs</td>
+              <td><span class="mono">fcntl.flock</span> on <span class="mono">.agyswap.lock</span> (config/slots) and a dedicated lock for <span class="mono">quota_cache.json</span></td>
+              <td>Lost updates during concurrent terminal runs, incl. the TUI's background poller racing a CLI call</td>
             </tr>
             <tr>
               <td><b>Template Escaping</b></td>
@@ -960,22 +992,25 @@ $ agyswap switch 3
 
       <!-- Section G: Storage Layout -->
       <section class="card" id="sec-storage">
-        <h2>G · POSIX Storage Layout</h2>
+        <h2>H · POSIX Storage Layout</h2>
         <div class="codeblock">
-~/.agy-swap/                           <span style="color:var(--faint)"># Mode 0700 (Owner rwx only)</span>
+~/.agyswap/                            <span style="color:var(--faint)"># Mode 0700 (Owner rwx only)</span>
 ├── config.json                        <span style="color:var(--faint)"># Mode 0600 (active_slot, accounts metadata)</span>
 ├── .agyswap.lock                      <span style="color:var(--faint)"># Mode 0600 (flock concurrency barrier)</span>
+├── quota_cache.json                   <span style="color:var(--faint)"># Mode 0600 (TTL-cached Gemini quota, merge-safe)</span>
+├── dashboard.html                     <span style="color:var(--faint)"># Mode 0600 (generated by 'agyswap viz')</span>
 ├── slots/                             <span style="color:var(--faint)"># Mode 0700 (Isolated slot directory)</span>
 │   ├── slot-1.json                    <span style="color:var(--faint)"># Mode 0600 (OAuth token credentials)</span>
 │   └── slot-2.json                    <span style="color:var(--faint)"># Mode 0600</span>
 └── backup/                            <span style="color:var(--faint)"># Mode 0700 (Directory)</span>
     └── config-YYYYMMDD-HHMMSS.json    <span style="color:var(--faint)"># Mode 0600 (Rolling automated backups)</span>
         </div>
+        <p style="color:var(--muted);font-size:12.5px;margin-top:10px">Migrating from an older install? Data used to live at <span class="mono">~/.agy-swap/</span> (hyphenated — it collided with an unrelated third-party tool of a similar name). agyswap moves just its own files here automatically the first time you run any command after upgrading.</p>
       </section>
 
       <!-- Section H: Installation & Setup -->
       <section class="card" id="sec-install">
-        <h2>H · Installation &amp; Shell Completion</h2>
+        <h2>I · Installation &amp; Shell Completion</h2>
         <div class="tabs">
           <button class="tab-btn active" data-tab="tab-install-brew">Homebrew (macOS)</button>
           <button class="tab-btn" data-tab="tab-install-curl">1-Line Curl</button>
@@ -989,19 +1024,25 @@ $ agyswap switch 3
           <div class="codeblock">
 <span style="color:var(--faint)"># Install via Homebrew Tap (Shell completions automatically configured):</span>
 brew install g1mn/tap/agyswap
+
+<span style="color:var(--faint)"># 'agyswap tui'/'watch' need rich+textual, which Homebrew doesn't vendor:</span>
+pip3 install --user rich textual
           </div>
         </div>
 
         <div class="tab-panel" id="tab-install-curl">
           <div class="codeblock">
-<span style="color:var(--faint)"># Install via official installer script:</span>
+<span style="color:var(--faint)"># Install via official installer script (fetches modules/ automatically):</span>
 curl -fsSL https://raw.githubusercontent.com/g1mn/agyswap/main/install.sh | bash
+
+<span style="color:var(--faint)"># 'agyswap tui'/'watch' need rich+textual:</span>
+pip3 install --user rich textual
           </div>
         </div>
 
         <div class="tab-panel" id="tab-install-pip">
           <div class="codeblock">
-<span style="color:var(--faint)"># Install from cloned repository via pip/pipx:</span>
+<span style="color:var(--faint)"># Install from cloned repository via pip/pipx (pulls in rich+textual automatically):</span>
 git clone https://github.com/g1mn/agyswap.git
 cd agyswap
 pip install .
@@ -1032,7 +1073,7 @@ agyswap completion fish > ~/.config/fish/completions/agyswap.fish
 
       <!-- Section I: FAQ -->
       <section class="card" id="sec-faq">
-        <h2>I · Troubleshooting FAQ</h2>
+        <h2>J · Troubleshooting FAQ</h2>
         <div class="faq-item">
           <div class="faq-q">Do running agy CLI sessions switch immediately? <span>+</span></div>
           <div class="faq-a">macOS caches Keychain reads in memory for short durations. While the Keychain is updated instantly in ~0.1s, starting a new terminal prompt or restarting existing agy sessions guarantees active credential activation.</div>
@@ -1044,6 +1085,18 @@ agyswap completion fish > ~/.config/fish/completions/agyswap.fish
         <div class="faq-item">
           <div class="faq-q">What should I do if a token expires? <span>+</span></div>
           <div class="faq-a">Run <span class="mono">agyswap rotate &lt;slot&gt;</span> to initiate a token refresh, or log into the expired account using <span class="mono">agy</span> and run <span class="mono">agyswap sync</span>.</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q">My data used to live at ~/.agy-swap — where did it go? <span>+</span></div>
+          <div class="faq-a">Moved automatically to <span class="mono">~/.agyswap/</span> (no hyphen) the first time you ran any command after upgrading — the old hyphenated path collided with an unrelated third-party tool of a similar name. Only agyswap's own files (config, slots, backups) were moved; nothing else in the old directory was touched.</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q">Why does `agyswap tui` say it can't load the TUI module? <span>+</span></div>
+          <div class="faq-a"><span class="mono">tui</span>/<span class="mono">watch</span> need the <span class="mono">rich</span> and <span class="mono">textual</span> packages. Pip/pipx installs get them automatically; Homebrew and the curl installer don't vendor them, so run <span class="mono">pip3 install --user rich textual</span> once. Every other command works without them.</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q">What's the difference between `disable` and `remove`? <span>+</span></div>
+          <div class="faq-a"><span class="mono">agyswap disable &lt;slot&gt;</span> just holds an account out of blind rotation (<span class="mono">agyswap switch</span> with no target skips it) — its credentials stay intact and <span class="mono">agyswap switch &lt;slot&gt;</span> still switches to it explicitly. <span class="mono">agyswap remove &lt;slot&gt;</span> deletes the slot's stored token entirely.</div>
         </div>
       </section>
     </main>
@@ -1083,9 +1136,14 @@ document.querySelectorAll('.faq-q').forEach(function(el) {
 /* Interactive Presets for SVG Topology */
 var presetMap = {
   all: {
-    highlightNodes: ['node-cli', 'node-core', 'node-keychain', 'node-agy', 'node-storage', 'node-google'],
-    highlightLinks: ['link-cli-core', 'link-core-keychain', 'link-keychain-agy', 'link-core-storage', 'link-core-google'],
+    highlightNodes: ['node-cli', 'node-tui', 'node-core', 'node-keychain', 'node-agy', 'node-storage', 'node-google'],
+    highlightLinks: ['link-cli-core', 'link-tui-core', 'link-core-keychain', 'link-keychain-agy', 'link-core-storage', 'link-core-google'],
     badge: 'Full System Architecture'
+  },
+  tui: {
+    highlightNodes: ['node-tui', 'node-core', 'node-keychain', 'node-storage', 'node-google'],
+    highlightLinks: ['link-tui-core', 'link-core-keychain', 'link-core-storage', 'link-core-google'],
+    badge: 'Live TUI Dashboard Path'
   },
   keychain: {
     highlightNodes: ['node-core', 'node-keychain', 'node-agy'],

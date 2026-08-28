@@ -93,7 +93,7 @@
     <g transform="translate(470, 0)">
       <rect width="200" height="54" rx="10" fill="#1E293B" stroke="#475569" stroke-width="1.2"/>
       <text x="100" y="24" text-anchor="middle" font-family="ui-monospace, monospace" font-size="11" font-weight="700" fill="#94A3B8" letter-spacing="0.08em">DEPENDENCIES</text>
-      <text x="100" y="44" text-anchor="middle" font-family="-apple-system, sans-serif" font-size="15" font-weight="800" fill="#F8FAFC">0 External Deps</text>
+      <text x="100" y="44" text-anchor="middle" font-family="-apple-system, sans-serif" font-size="15" font-weight="800" fill="#F8FAFC">rich+textual (TUI)</text>
     </g>
 
     <!-- Pill 4: File Isolation -->

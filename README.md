@@ -10,8 +10,8 @@
   <a href="https://g1mn.github.io/agyswap/"><img src="https://img.shields.io/badge/Token_Savings-94.2%25-brightgreen.svg" alt="Token Savings: 94.2%"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"></a>
   <a href="#-requirements"><img src="https://img.shields.io/badge/Platform-macOS-lightgrey.svg" alt="Platform: macOS"></a>
-  <a href="#-installation"><img src="https://img.shields.io/badge/Python-3.8+-green.svg" alt="Python: 3.8+"></a>
-  <a href="#-key-features"><img src="https://img.shields.io/badge/Dependencies-0-brightgreen.svg" alt="Zero Dependencies"></a>
+  <a href="#-installation"><img src="https://img.shields.io/badge/Python-3.9+-green.svg" alt="Python: 3.9+"></a>
+  <a href="#-key-features"><img src="https://img.shields.io/badge/Dependencies-rich%20%2B%20textual-brightgreen.svg" alt="Dependencies: rich + textual"></a>
 </p>
 
 <p align="center">
@@ -31,7 +31,8 @@
 
 ### 🌐 Interactive Architecture Dashboard & Token Playground
 For a live, interactive visualization of account slots, switching sequences, and a **real-time token compression playground**:
-- **1-Click CLI Open**: Run `agyswap viz --open` to view your local account status in your default browser (saved in isolated `~/.agy-swap/dashboard.html` with Mode `0600`, completely git-clean).
+- **1-Click CLI Open**: Run `agyswap viz --open` to view your local account status in your default browser (saved in isolated `~/.agyswap/dashboard.html` with Mode `0600`, completely git-clean).
+- **Live TUI Dashboard**: Run `agyswap tui` for a keyboard-driven terminal dashboard with live per-account Gemini quota bars, or `agyswap watch` to jump straight into the live monitor.
 - **Online Demo & Token Playground**: Hosted on GitHub Pages at [https://g1mn.github.io/agyswap](https://g1mn.github.io/agyswap) (Includes Interactive Token ROI Calculator & a 9-language AST Split Viewer — Python, TypeScript, Go, Rust, Java, C, C++, Header, Shell).
 
 ---
@@ -51,12 +52,14 @@ For a live, interactive visualization of account slots, switching sequences, and
 - 🧠 **Context & AST Repo-Map (`ctx`)**: **94.2% Token Compression (~32k tokens saved/session)** via pure AST skeletons and lightweight state persistence.
 - 📊 **Real-time Token Benchmarking (`ctx bench`)**: Built-in visual terminal cards, Markdown tables (`-md`), and JSON metrics for tracking token efficiency.
 - 🏆 **Golden Quality Benchmark (`ctx bench --golden`)**: Multi-language oracle regression suite (Python, TypeScript/TSX, Go, Rust, Java, C, C++, Shell) — enforces 100% symbol-recall on every release.
-- 🏷️ **Account Aliases**: Assign meaningful aliases (`main`, `work`, `dev`) for fast switching.
+- 🏷️ **Account Aliases**: Assign meaningful aliases (`main`, `work`, `dev`) via `agyswap add`/`rename`, or manage them directly with the standalone `agyswap alias` command.
+- 🔀 **Enable/Disable Slots**: `agyswap disable <slot>` holds an account out of blind rotation (`agyswap switch` with no target) without removing its credentials — `agyswap switch <slot>` still works explicitly.
+- 📊 **Gemini API Quota Tracking (`quota`)**: Per-account, per-model usage and reset times, TTL-cached and merge-safe (`agyswap quota`, `--refresh`, `--json`).
 - 📦 **Backup & Migration (`export`/`import`)**: Migrate slot configurations across machines (live secrets excluded).
 - 🎯 **`--dry-run` Previews**: Non-destructive preview mode for `switch`, `remove`, and `sync`.
 - 🔔 **Active Session Detection**: Scans and warns about running `agy` sessions and their working directories.
 - ⌨️ **Shell Auto-Completion**: Tab completion scripts for `bash`, `zsh`, and `fish`.
-- 📦 **Zero External Dependencies**: Powered entirely by the Python 3 standard library.
+- 📦 **Minimal Dependencies**: Just `rich` + `textual`, used solely for the optional `agyswap tui`/`watch` live dashboard — everything else is standard library.
 
 ---
 
@@ -176,12 +179,15 @@ brew tap g1mn/tap && brew install agyswap
 curl -fsSL https://raw.githubusercontent.com/g1mn/agyswap/main/install.sh | bash
 ```
 
-### Option 3: Pip / Pipx
+### Option 3: Pip / Pipx (from source)
 ```bash
-pip install agyswap
+git clone https://github.com/g1mn/agyswap.git
+cd agyswap
+pip install .
 # or
-pipx install agyswap
+pipx install .
 ```
+*Not published on PyPI — the unhyphenated name collides with an unrelated existing `agy-swap` project.*
 
 ### Option 4: Clone and Install
 ```bash
@@ -284,8 +290,8 @@ agyswap audit
 ```text
 🛡️  agyswap Security Audit
 
-  ✓ ~/.agy-swap       : Permission 0700 (Secure)
-  ✓ ~/.agy-swap/slots : Permission 0700 (Secure)
+  ✓ ~/.agyswap        : Permission 0700 (Secure)
+  ✓ ~/.agyswap/slots  : Permission 0700 (Secure)
   ✓ config.json       : Permission 0600 (Secure)
   ✓ macOS Keychain Interface : Connected (Native C API)
 
@@ -301,6 +307,32 @@ agyswap export ~/Desktop/agyswap-backup.json
 agyswap import ~/Desktop/agyswap-backup.json
 # Then log into each account once via 'agy' and run 'agyswap sync'
 ```
+
+### 8. Aliases & Rotation Control (`alias` / `enable` / `disable`)
+```bash
+agyswap alias 2 work        # Set alias 'work' on slot #2
+agyswap alias 2 --unset     # Remove the alias
+agyswap alias               # List all aliased slots
+
+agyswap disable 2           # Hold slot #2 out of blind rotation (credentials kept)
+agyswap switch              # Rotates to the next *enabled* slot, skipping disabled ones
+agyswap switch 2            # Explicit switch still works even if slot #2 is disabled
+agyswap enable 2            # Re-include it in rotation
+```
+
+### 9. Gemini Quota (`quota`)
+```bash
+agyswap quota                # Per-model quota for all enabled accounts (TTL-cached, ~45s)
+agyswap quota work --refresh # Force a live re-fetch for one account, bypassing the cache
+agyswap quota --json         # Machine-readable output
+```
+
+### 10. Live Dashboard (`tui` / `watch`)
+```bash
+agyswap tui     # Full-screen dashboard: account list, live quota bars, switch/add/remove
+agyswap watch   # Jump straight into the live quota-watch view
+```
+Keys: `s` switch · `w` watch · `j`/`k` move · `q` quit.
 
 ---
 
@@ -320,15 +352,19 @@ agyswap import ~/Desktop/agyswap-backup.json
 ## 📂 Storage Layout
 
 ```text
-~/.agy-swap/                     # Mode 0700 (Owner rwx only)
+~/.agyswap/                      # Mode 0700 (Owner rwx only)
 ├── config.json                  # Mode 0600 (Metadata & active slot mapping)
 ├── .agyswap.lock                # Mode 0600 (flock concurrency barrier)
+├── quota_cache.json             # Mode 0600 (TTL-cached Gemini quota, merge-safe)
+├── dashboard.html                # Mode 0600 (generated by 'agyswap viz')
 ├── slots/                       # Mode 0700 (Directory)
 │   ├── slot-1.json              # Mode 0600 (Token credential payload)
 │   └── slot-2.json              # Mode 0600
 └── backup/                      # Mode 0700 (Directory)
     └── config-YYYYMMDD.json     # Mode 0600 (Rolling automated backups)
 ```
+
+> **Migrating from an older install?** `agyswap` used to store its data at `~/.agy-swap/` (note the hyphen) — a path that happens to collide with an unrelated, similarly-named third-party tool. From v0.5.0 onward, `agyswap` automatically moves just its own files (`config.json`, `slots/`, `backup/`, `dashboard.html`) to `~/.agyswap/` the first time you run any command; anything else left in the old directory is never touched.
 
 ---
 

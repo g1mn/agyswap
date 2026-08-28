@@ -37,7 +37,7 @@
   <rect width="960" height="480" class="bg" rx="10"/>
 
   <!-- Top Header Title -->
-  <text x="32" y="38" fill="#58a6ff" font-family="ui-monospace, monospace" font-size="11px" font-weight="700" letter-spacing="0.1em">SYSTEM TOPOLOGY • V0.1.0</text>
+  <text x="32" y="38" fill="#58a6ff" font-family="ui-monospace, monospace" font-size="11px" font-weight="700" letter-spacing="0.1em">SYSTEM TOPOLOGY • V0.5.0</text>
   <text x="32" y="58" fill="#f0f6fc" font-family="-apple-system, sans-serif" font-size="16px" font-weight="700">agyswap Architecture &amp; Data Flow Topology</text>
   <text x="32" y="78" fill="#8b949e" font-family="-apple-system, sans-serif" font-size="12px">Native C API Keychain Binding • POSIX 0600 File Isolation • Atomic Concurrency Locking</text>
 
@@ -52,12 +52,22 @@
     <text x="16" y="150" class="badge-text">zsh · bash · fish</text>
   </g>
 
+  <!-- Node 1b: Live TUI Dashboard -->
+  <g transform="translate(30, 325)">
+    <rect width="200" height="120" class="card"/>
+    <text x="16" y="26" class="title">🖥️ Live TUI Dashboard</text>
+    <text x="16" y="50" class="text-code">$ agyswap tui</text>
+    <text x="16" y="70" class="text-code">$ agyswap watch</text>
+    <text x="16" y="92" class="text">3s poll · rich+textual</text>
+    <text x="16" y="110" class="badge-text">own safety layer (actions.py)</text>
+  </g>
+
   <!-- Node 2: agyswap Engine Core -->
   <g transform="translate(290, 100)">
-    <rect width="320" height="250" class="card-accent"/>
+    <rect width="320" height="296" class="card-accent"/>
     <path d="M 0 10 Q 0 0 10 0 L 310 0 Q 320 0 320 10 L 320 34 L 0 34 Z" class="header-tint"/>
     <line x1="0" y1="34" x2="320" y2="34" stroke="#30363d" stroke-width="1"/>
-    <text x="16" y="23" class="title-accent">🔄 agyswap Engine Core (v0.4.0)</text>
+    <text x="16" y="23" class="title-accent">🔄 agyswap Engine Core (v0.5.0)</text>
     
     <text x="16" y="60" class="text-green">⚡ Native C API Binding</text>
     <text x="30" y="78" class="text">SecKeychain APIs (0% argv leak)</text>
@@ -71,7 +81,10 @@
     <text x="16" y="198" class="text-ink">🌐 Google UserInfo &amp; JWT Claims</text>
     <text x="30" y="216" class="text">Offline parsing + Bearer API</text>
 
-    <text x="16" y="244" class="badge-text">Zero Dependencies · Pure Python 3</text>
+    <text x="16" y="244" class="text-ink">📊 Quota Cache &amp; TUI Safety Layer</text>
+    <text x="30" y="262" class="text">modules/quota.py + actions.py</text>
+
+    <text x="16" y="288" class="badge-text">Pure Python 3 · rich+textual for tui/watch only</text>
   </g>
 
   <!-- Node 3: macOS Keychain -->
@@ -94,31 +107,35 @@
   <g transform="translate(670, 260)">
     <rect width="260" height="95" class="card"/>
     <text x="16" y="26" class="title">📁 Local Slot Store (0600)</text>
-    <text x="16" y="48" class="text" fill="#e6edf3">~/.agy-swap/slots/slot-*.json</text>
+    <text x="16" y="48" class="text" fill="#e6edf3">~/.agyswap/slots/slot-*.json</text>
     <text x="16" y="66" class="text">config.json + rolling backups</text>
     <text x="16" y="84" class="badge-text">.agyswap.lock (fcntl barrier)</text>
   </g>
 
-  <!-- Node 6: Google UserInfo API -->
+  <!-- Node 6: Google OAuth & Quota API -->
   <g transform="translate(670, 380)">
-    <rect width="260" height="60" class="card-blue"/>
-    <text x="16" y="24" class="title" fill="#58a6ff">🌐 Google OAuth Endpoints</text>
-    <text x="16" y="44" class="text">oauth2/v3/userinfo &amp; token</text>
+    <rect width="260" height="78" class="card-blue"/>
+    <text x="16" y="22" class="title" fill="#58a6ff">🌐 Google OAuth &amp; Quota</text>
+    <text x="16" y="42" class="text">oauth2/v3/userinfo &amp; token</text>
+    <text x="16" y="62" class="text">cloudcode-pa.googleapis.com (quota)</text>
   </g>
 
   <!-- Connecting Links -->
   <!-- CLI to Core -->
   <path d="M 230 225 L 290 225" class="line-accent" marker-end="url(#arrow-accent)"/>
-  
+
+  <!-- TUI to Core -->
+  <path d="M 230 385 L 290 335" class="line-accent" marker-end="url(#arrow-accent)"/>
+
   <!-- Core to Keychain -->
   <path d="M 610 150 L 670 75" class="line-green" marker-end="url(#arrow-green)"/>
-  
+
   <!-- Keychain to agy (read) -->
   <path d="M 800 120 L 800 145" class="line-dashed" marker-end="url(#arrow-muted)"/>
-  
+
   <!-- Core to Storage -->
   <path d="M 610 260 L 670 300" class="line-muted" marker-end="url(#arrow-muted)"/>
-  
+
   <!-- Core to Google -->
-  <path d="M 580 350 L 670 400" class="line-google" marker-end="url(#arrow-accent)"/>
+  <path d="M 580 396 L 670 410" class="line-google" marker-end="url(#arrow-accent)"/>
 </svg>
