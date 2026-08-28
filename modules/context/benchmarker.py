@@ -79,6 +79,7 @@ class ContextBenchmarker:
             "savings_tokens": savings_tokens,
             "reduction_pct": round(reduction_pct, 1),
             "lang_stats": lang_stats,
+            "_raw_map": raw_map,
         }
 
     @staticmethod
@@ -150,5 +151,94 @@ class ContextBenchmarker:
             for ext, data in sorted(stats["lang_stats"].items(), key=lambda x: x[1]["lines"], reverse=True):
                 tokens_est = int(data["chars"] / 3.6)
                 lines.append(f"| `{ext}` | {data['files']} | {data['lines']:,} | ~{tokens_est:,} |")
+
+        return "\n".join(lines)
+
+    @classmethod
+    def run_golden_benchmark(cls, fixture_dir: str | Path | None = None) -> Dict[str, Any]:
+        """Runs benchmark against fixed multi-language Golden Repo and measures symbol recall."""
+        import json
+        import time
+
+        if fixture_dir is None:
+            # Look relative to project root
+            base_dir = Path(__file__).resolve().parent.parent.parent
+            fixture_path = base_dir / "tests" / "fixtures" / "golden_repo"
+        else:
+            fixture_path = Path(fixture_dir).resolve()
+
+        if not fixture_path.exists():
+            raise FileNotFoundError(f"Golden fixture directory not found at: {fixture_path}")
+
+        meta_file = fixture_path / "metadata.json"
+        expected_symbols = []
+        if meta_file.exists():
+            try:
+                meta = json.loads(meta_file.read_text(encoding="utf-8"))
+                expected_symbols = meta.get("expected_symbols", [])
+            except Exception:
+                pass
+
+        bench = cls(root_dir=fixture_path)
+        start_time = time.perf_counter()
+        stats = bench.run_benchmark(budget=2000)
+        latency_ms = (time.perf_counter() - start_time) * 1000.0
+
+        repo_map = stats.pop("_raw_map", "")
+
+        matched = []
+        missing = []
+        for sym in expected_symbols:
+            if sym in repo_map:
+                matched.append(sym)
+            else:
+                missing.append(sym)
+
+        total_exp = len(expected_symbols)
+        recall_pct = (len(matched) / total_exp * 100.0) if total_exp > 0 else 100.0
+        map_tokens = stats["map_tokens"]
+        info_density = (len(matched) / (map_tokens / 1000.0)) if map_tokens > 0 else 0.0
+
+        stats.update({
+            "is_golden": True,
+            "latency_ms": round(latency_ms, 2),
+            "expected_symbols_count": total_exp,
+            "matched_symbols_count": len(matched),
+            "missing_symbols": missing,
+            "recall_pct": round(recall_pct, 1),
+            "info_density": round(info_density, 1),
+        })
+        return stats
+
+    @staticmethod
+    def render_golden_report(stats: Dict[str, Any]) -> str:
+        """Renders an ASCII visualization card for the Golden Benchmark."""
+        rec_pct = stats.get("recall_pct", 100.0)
+        red_pct = stats["reduction_pct"]
+        latency = stats.get("latency_ms", 0.0)
+        density = stats.get("info_density", 0.0)
+        matched = stats.get("matched_symbols_count", 0)
+        total = stats.get("expected_symbols_count", 0)
+
+        lines = [
+            "┌─────────────────────────────────────────────────────────────┐",
+            "│ 🏆 agyswap Golden Quality & Context Benchmark Monitor       │",
+            "├─────────────────────────────────────────────────────────────┤",
+            f"│  Standard Fixtures  : {stats['raw_files']} files ({stats['raw_lines']:,} lines)              │",
+            f"│  Raw Code Footprint : ~{stats['raw_tokens']:,} tokens                            │",
+            f"│  Repo-Map Size      : ~{stats['map_tokens']:,} tokens                            │",
+            "├─────────────────────────────────────────────────────────────┤",
+            f"│  Token Compression  : {red_pct:>5.1f}% 🟢                            │",
+            f"│  Symbol Recall      : {rec_pct:>5.1f}% ({matched}/{total} symbols) 🟢{' ' * max(0, 16 - len(f'({matched}/{total} symbols)'))}│",
+            f"│  Information Density: {density:>5.1f} symbols / 1k Tokens 🟢          │",
+            f"│  AST Parsing Latency: {latency:>5.2f} ms ⚡                            │",
+            "└─────────────────────────────────────────────────────────────┘",
+        ]
+
+        missing = stats.get("missing_symbols", [])
+        if missing:
+            lines.append("\n⚠️ Missing Expected Symbols:")
+            for m in missing:
+                lines.append(f"  • {m}")
 
         return "\n".join(lines)

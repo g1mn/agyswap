@@ -1678,16 +1678,25 @@ def cmd_context(args):
 
     elif subaction in ("bench", "stats"):
         from modules.context.benchmarker import ContextBenchmarker
-        benchmarker = ContextBenchmarker(root_dir=root_dir)
         budget = getattr(args, "budget", 2000)
-        stats = benchmarker.run_benchmark(budget=budget)
 
-        if getattr(args, "json", False):
-            print(ContextBenchmarker.render_json(stats))
-        elif getattr(args, "markdown", False):
-            print(ContextBenchmarker.render_markdown(stats))
+        if getattr(args, "golden", False):
+            stats = ContextBenchmarker.run_golden_benchmark()
+            if getattr(args, "json", False):
+                print(ContextBenchmarker.render_json(stats))
+            elif getattr(args, "markdown", False):
+                print(ContextBenchmarker.render_markdown(stats))
+            else:
+                print(ContextBenchmarker.render_golden_report(stats))
         else:
-            print(ContextBenchmarker.render_cli_report(stats))
+            benchmarker = ContextBenchmarker(root_dir=root_dir)
+            stats = benchmarker.run_benchmark(budget=budget)
+            if getattr(args, "json", False):
+                print(ContextBenchmarker.render_json(stats))
+            elif getattr(args, "markdown", False):
+                print(ContextBenchmarker.render_markdown(stats))
+            else:
+                print(ContextBenchmarker.render_cli_report(stats))
 
 # ── Main Entrypoint ─────────────────────────────────────────────────────────
 def main():
@@ -1813,6 +1822,7 @@ def main():
     p_ctx_bench = ctx_sub.add_parser("bench", aliases=["stats"], help="Measure codebase token footprint and compression efficiency")
     p_ctx_bench.add_argument("--dir", default=".", help="Target root directory (default: .)")
     p_ctx_bench.add_argument("--budget", type=int, default=2000, help="Max token budget (default: 2000)")
+    p_ctx_bench.add_argument("--golden", action="store_true", help="Run benchmark against standard multi-language Golden Repo")
     p_ctx_bench.add_argument("--json", action="store_true", help="Output benchmark metrics in JSON format")
     p_ctx_bench.add_argument("-md", "--markdown", action="store_true", help="Output benchmark metrics in Markdown table format")
 

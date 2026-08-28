@@ -27,5 +27,11 @@ classifiers = [
 [project.scripts]
 agyswap = "agyswap:main"
 
+[project.optional-dependencies]
+context = [
+    "tree-sitter>=0.21.0",
+    "tree-sitter-languages>=1.10.0",
+]
+
 [project.urls]
 Repository = "https://github.com/g1mn/agyswap"

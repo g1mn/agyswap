@@ -1,0 +1,30 @@
+{
+  "description": "Standard Multi-language Golden Benchmark Testset",
+  "expected_symbols": [
+    "const MAX_RETRY_ATTEMPTS",
+    "class BaseAuthenticator:",
+    "class OAuthEngine(BaseAuthenticator):",
+    "@property def is_authenticated() -> bool",
+    "@staticmethod def generate_state(nonce: str) -> str",
+    "@classmethod def load_cached(session_id: str) -> Optional[OAuthEngine]",
+    "async def exchange_code(code: str, client_id: str) -> Optional[Dict[str, Any]]",
+    "const BATCH_SIZE",
+    "class StreamProcessor:",
+    "def ingest(records: List[Any]) -> int",
+    "async def flush() -> bool",
+    "interface AuthResponse",
+    "type TokenPair =",
+    "class ApiClient",
+    "interface ButtonProps",
+    "class ModalDialog",
+    "function PrimaryButton",
+    "type RouterConfig struct",
+    "type PacketHandler interface",
+    "func NewRouter(",
+    "struct StorageBlock",
+    "trait BlockDriver",
+    "pub async fn init_driver",
+    "deploy_production()",
+    "rollback_release()"
+  ]
+}

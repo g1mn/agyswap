@@ -99,5 +99,17 @@ class TestContextModule(unittest.TestCase):
             report = ContextBenchmarker.render_cli_report(stats)
             self.assertIn("Indexed Files      : 0", report)
 
+    def test_golden_benchmark_regression(self):
+        """Regression test ensuring 100% symbol recall and > 65% compression on standard testset."""
+        from modules.context.benchmarker import ContextBenchmarker
+        stats = ContextBenchmarker.run_golden_benchmark()
+        self.assertGreaterEqual(stats["raw_files"], 6)
+        self.assertGreater(stats["expected_symbols_count"], 20)
+        self.assertEqual(stats["recall_pct"], 100.0, f"Missing symbols: {stats.get('missing_symbols')}")
+        self.assertGreater(stats["reduction_pct"], 65.0)
+        self.assertLess(stats["latency_ms"], 50.0)  # sub-50ms execution
+        report = ContextBenchmarker.render_golden_report(stats)
+        self.assertIn("Golden Quality & Context Benchmark", report)
+
 if __name__ == "__main__":
     unittest.main()
