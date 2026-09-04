@@ -524,6 +524,7 @@
           <button class="preset-btn" data-preset="keychain">🔐 Keychain I/O &amp; C API</button>
           <button class="preset-btn" data-preset="switch">⚡ Account Switch Sequence</button>
           <button class="preset-btn" data-preset="tui">🖥️ Live TUI Dashboard Path</button>
+          <button class="preset-btn" data-preset="mcp">🤖 Stateless MCP Agent Path</button>
           <button class="preset-btn" data-preset="userinfo">👤 Google UserInfo Flow</button>
         </div>
       </div>
@@ -803,6 +804,18 @@ $ agyswap switch 3
             <div class="desc">Live, keyboard-driven terminal dashboard with real-time per-model quota bars (<span class="mono">rich</span> + <span class="mono">textual</span>). <span class="mono">watch</span> jumps straight into the live-monitor view.</div>
           </div>
           <div class="cmd-card">
+            <div class="sig">agyswap guard [slot] [-r] [-y] [--ctx]</div>
+            <div class="desc">🛡️ Rate-Limit Continuous Protector. Automatically detects 429 quota exhaustion in real-time, rotates credentials in ~0.1s, and resumes conversation context seamlessly via <code>agy -c</code> without human intervention.</div>
+          </div>
+          <div class="cmd-card">
+            <div class="sig">agyswap mcp [--http] [--port 8765]</div>
+            <div class="desc">🤖 2026 Stateless Model Context Protocol (MCP) Server. Enables Antigravity, Cursor, and Claude Code to autonomously query Gemini quotas and rotate credentials via stdio or lightweight HTTP.</div>
+          </div>
+          <div class="cmd-card">
+            <div class="sig">agyswap prompt [--plain] [--json]</div>
+            <div class="desc">⚡ Sub-millisecond status string for Starship, zsh PROMPT, and tmux (e.g. <code>[agy:work 85%]</code>). Zero network lag.</div>
+          </div>
+          <div class="cmd-card">
             <div class="sig">agyswap completion &lt;shell&gt;</div>
             <div class="desc">Generates shell auto-completion scripts for zsh, bash, and fish with dynamic slot completion.</div>
           </div>
@@ -1001,7 +1014,7 @@ $ agyswap switch 3
           <button class="tab-btn" data-tab="tab-mcp-cursor">Cursor (mcp.json)</button>
         </div>
 
-        <div id="tab-mcp-agy" class="tab-pane active">
+        <div class="tab-panel active" id="tab-mcp-agy">
           <div class="codeblock">{
   "mcpServers": {
     "agyswap": {
@@ -1011,7 +1024,7 @@ $ agyswap switch 3
   }
 }</div>
         </div>
-        <div id="tab-mcp-claude" class="tab-pane" style="display:none">
+        <div class="tab-panel" id="tab-mcp-claude">
           <div class="codeblock">{
   "mcpServers": {
     "agyswap": {
@@ -1021,7 +1034,7 @@ $ agyswap switch 3
   }
 }</div>
         </div>
-        <div id="tab-mcp-cursor" class="tab-pane" style="display:none">
+        <div class="tab-panel" id="tab-mcp-cursor">
           <div class="codeblock">{
   "mcpServers": {
     "agyswap": {
@@ -1032,6 +1045,46 @@ $ agyswap switch 3
 }</div>
         </div>
 
+        <!-- 5 Autonomous Agent Tools Reference -->
+        <div style="margin-top:16px;overflow-x:auto">
+          <table style="width:100%">
+            <thead>
+              <tr>
+                <th>MCP Tool Name</th>
+                <th>Input Schema</th>
+                <th>Autonomous Agent Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>agyswap_list_accounts</code></td>
+                <td><code>{}</code></td>
+                <td>Queries all slots, active state, aliases, and token health info.</td>
+              </tr>
+              <tr>
+                <td><code>agyswap_get_quota</code></td>
+                <td><code>{ target?, refresh? }</code></td>
+                <td>Inspects real-time remaining % and reset times for Gemini models.</td>
+              </tr>
+              <tr>
+                <td><code>agyswap_switch_account</code></td>
+                <td><code>{ target?, force?, compact_context? }</code></td>
+                <td>Rotates active Keychain credential &amp; compacts AST context automatically.</td>
+              </tr>
+              <tr>
+                <td><code>agyswap_rotate_token</code></td>
+                <td><code>{ target?, all? }</code></td>
+                <td>Refreshes OAuth credentials in background without browser interaction.</td>
+              </tr>
+              <tr>
+                <td><code>agyswap_compact_context</code></td>
+                <td><code>{ budget?, goal? }</code></td>
+                <td>Generates 96% compressed <code>REPO_MAP.md</code> and <code>STATE.md</code> into <code>.agents/memory/</code>.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
         <!-- Interactive MCP Tool Tester -->
         <div style="margin-top:16px;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:14px">
           <div style="font-weight:700;font-size:13px;margin-bottom:8px;color:var(--ink)">🧪 Test Stateless MCP Requests (1-Shot JSON-RPC)</div>
@@ -1039,8 +1092,10 @@ $ agyswap switch 3
             <button class="tool-test-btn" data-tool="list" style="padding:6px 12px;background:var(--surface);border:1px solid var(--line);border-radius:5px;font-family:var(--mono);font-size:11px;cursor:pointer;color:var(--ink)">tools/list</button>
             <button class="tool-test-btn" data-tool="accounts" style="padding:6px 12px;background:var(--surface);border:1px solid var(--line);border-radius:5px;font-family:var(--mono);font-size:11px;cursor:pointer;color:var(--ink)">call: agyswap_list_accounts</button>
             <button class="tool-test-btn" data-tool="quota" style="padding:6px 12px;background:var(--surface);border:1px solid var(--line);border-radius:5px;font-family:var(--mono);font-size:11px;cursor:pointer;color:var(--ink)">call: agyswap_get_quota</button>
+            <button class="tool-test-btn" data-tool="switch" style="padding:6px 12px;background:var(--surface);border:1px solid var(--line);border-radius:5px;font-family:var(--mono);font-size:11px;cursor:pointer;color:var(--ink)">call: agyswap_switch_account</button>
+            <button class="tool-test-btn" data-tool="compact" style="padding:6px 12px;background:var(--surface);border:1px solid var(--line);border-radius:5px;font-family:var(--mono);font-size:11px;cursor:pointer;color:var(--ink)">call: agyswap_compact_context</button>
           </div>
-          <pre id="mcpResponseBox" style="background:#0d1117;color:#7ee787;font-family:var(--mono);font-size:11.5px;padding:10px;border-radius:5px;margin:0;max-height:160px;overflow:auto">{
+          <pre id="mcpResponseBox" style="background:#0d1117;color:#7ee787;font-family:var(--mono);font-size:11.5px;padding:10px;border-radius:5px;margin:0;max-height:180px;overflow:auto">{
   "jsonrpc": "2.0",
   "result": {
     "protocolVersion": "2026-07-28",
@@ -1209,12 +1264,13 @@ themeBtn.addEventListener('click', function() {
   try { localStorage.setItem('agyswap-theme', next); } catch(e){}
 });
 
-/* Tabs */
+/* Tabs (Card-scoped isolation) */
 document.querySelectorAll('.tab-btn').forEach(function(btn) {
   btn.addEventListener('click', function() {
+    var parentScope = btn.closest('.card') || document;
     var tabId = btn.getAttribute('data-tab');
-    document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
-    document.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.remove('active'); });
+    parentScope.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+    parentScope.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.remove('active'); });
     btn.classList.add('active');
     var targetPanel = document.getElementById(tabId);
     if (targetPanel) targetPanel.classList.add('active');
@@ -1255,6 +1311,11 @@ var presetMap = {
     highlightNodes: ['node-core', 'node-google'],
     highlightLinks: ['link-core-google'],
     badge: 'Google UserInfo Flow'
+  },
+  mcp: {
+    highlightNodes: ['node-cli', 'node-core', 'node-storage', 'node-keychain', 'node-google'],
+    highlightLinks: ['link-cli-core', 'link-core-storage', 'link-core-keychain', 'link-core-google'],
+    badge: 'Stateless MCP Agent Pipeline (Zero-Dependency JSON-RPC)'
   }
 };
 
@@ -1780,6 +1841,35 @@ var mcpResponses = {
               "gemini-2.5-flash": { remaining_pct: 95.0, resets_at: "2026-09-04T18:00:00Z" }
             }
           }
+        }, null, 2)
+      }]
+    }
+  },
+  switch: {
+    jsonrpc: "2.0",
+    id: 4,
+    result: {
+      content: [{
+        type: "text",
+        text: JSON.stringify({
+          status: "success",
+          active_slot: 2,
+          email: "work@company.com",
+          message: "Successfully switched to Slot #2. 96.1% compressed context synced to .agents/memory/."
+        }, null, 2)
+      }]
+    }
+  },
+  compact: {
+    jsonrpc: "2.0",
+    id: 5,
+    result: {
+      content: [{
+        type: "text",
+        text: JSON.stringify({
+          status: "success",
+          message: "Repository AST map (135 lines) and working state snapshot (59 tokens) synced to .agents/memory/",
+          saved_tokens: "~32,194 tokens (94.2% reduction)"
         }, null, 2)
       }]
     }
