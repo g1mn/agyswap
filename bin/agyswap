@@ -1732,6 +1732,11 @@ _agyswap() {
     'quota:Show per-account Gemini API quota'
     'tui:Launch interactive live account dashboard'
     'watch:Launch live quota-watch view'
+    'guard:Auto-rotate on 429 quota exhaustion'
+    'mcp:Run 2026 Stateless Model Context Protocol server'
+    'prompt:Fast status string for shell prompts'
+    'context:AST Codebase Mapping & Token Optimizer'
+    'ctx:Alias for context'
     'completion:Generate shell auto-completion script'
   )
 
@@ -1763,7 +1768,7 @@ for acc in data.get('accounts', []):
       ;;
     3)
       case $words[2] in
-        switch|sw|remove|rm|rename|rotate|alias|enable|disable|quota)
+        switch|sw|remove|rm|rename|rotate|alias|enable|disable|quota|guard)
           _describe 'slot' slot_completions
           ;;
         completion)
@@ -1787,7 +1792,7 @@ _agyswap_complete() {
   cur="${COMP_WORDS[COMP_CWORD]}"
   prev="${COMP_WORDS[COMP_CWORD-1]}"
 
-  local commands="list ls switch sw status st add remove rm rename alias enable disable whoami sync rotate health audit export import viz quota tui watch completion"
+  local commands="list ls switch sw status st add remove rm rename alias enable disable whoami sync rotate health audit export import viz quota tui watch guard mcp prompt context ctx completion"
 
   if [[ $COMP_CWORD -eq 1 ]]; then
     COMPREPLY=($(compgen -W "$commands" -- "$cur"))
@@ -1795,7 +1800,7 @@ _agyswap_complete() {
   fi
 
   case "$prev" in
-    switch|sw|remove|rm|rename|rotate|alias|enable|disable|quota)
+    switch|sw|remove|rm|rename|rotate|alias|enable|disable|quota|guard)
       local slots=""
       if command -v agyswap &>/dev/null; then
         slots=$(agyswap list --json 2>/dev/null | python3 -c "
@@ -1868,11 +1873,18 @@ complete -c agyswap -n '__fish_use_subcommand' -a 'viz'        -d 'Update HTML d
 complete -c agyswap -n '__fish_use_subcommand' -a 'quota'      -d 'Show Gemini API quota'
 complete -c agyswap -n '__fish_use_subcommand' -a 'tui'        -d 'Launch live dashboard'
 complete -c agyswap -n '__fish_use_subcommand' -a 'watch'      -d 'Launch live quota-watch view'
+complete -c agyswap -n '__fish_use_subcommand' -a 'guard'      -d 'Auto-rotate on 429 quota limit'
+complete -c agyswap -n '__fish_use_subcommand' -a 'mcp'        -d 'Run 2026 Stateless MCP server'
+complete -c agyswap -n '__fish_use_subcommand' -a 'prompt'     -d 'Fast prompt status string'
+complete -c agyswap -n '__fish_use_subcommand' -a 'context'    -d 'Context & Token Optimizer'
+complete -c agyswap -n '__fish_use_subcommand' -a 'ctx'        -d 'Alias for context'
 complete -c agyswap -n '__fish_use_subcommand' -a 'completion' -d 'Generate auto-completion'
 
-complete -c agyswap -n '__fish_seen_subcommand_from switch sw remove rm rename rotate alias enable disable quota' -a '(__agyswap_slots)'
+complete -c agyswap -n '__fish_seen_subcommand_from switch sw remove rm rename rotate alias enable disable quota guard' -a '(__agyswap_slots)'
 complete -c agyswap -n '__fish_seen_subcommand_from completion' -a 'bash zsh fish'
 complete -c agyswap -n '__fish_seen_subcommand_from switch sw' -l force   -d 'Force switch with expired token'
+complete -c agyswap -n '__fish_seen_subcommand_from switch sw' -l ctx     -d 'Compact context before switch'
+complete -c agyswap -n '__fish_seen_subcommand_from guard'     -l ctx     -d 'Compact context before rotation'
 complete -c agyswap -n '__fish_seen_subcommand_from switch sw remove rm sync' -l dry-run -d 'Preview without modifying'
 complete -c agyswap -n '__fish_seen_subcommand_from sync' -l all -d 'Check sync for all slots'
 """)
