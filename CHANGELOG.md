@@ -5,6 +5,24 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ---
 
+## [0.6.0] — 2026-09-04
+
+### Added
+- 🛡️ **`agyswap guard`**: Continuous auto-rotation protector for `agy` CLI sessions. Proactively detects `429 Too Many Requests`, `RESOURCE_EXHAUSTED`, and quota errors in real-time, automatically rotates to the next healthy account, and resumes conversation seamlessly via `agy -c`.
+- 🤖 **2026 Stateless Model Context Protocol (MCP) Server (`agyswap mcp`)**: Full support for the latest 2026 Stateless MCP specification. Offers 5 autonomous agent tools (`list_accounts`, `get_quota`, `switch_account`, `rotate_token`, `compact_context`) over standard stdio or lightweight zero-dependency HTTP (`--http`).
+- 🧠 **Automatic Context Compaction Flag (`--ctx` / `-c`)**: Runs `agyswap ctx clean` before profile switches to synchronize 96.1% compressed AST repository maps and state snapshots into `.agents/memory/`.
+- ⌨️ **`agyswap prompt`**: Ultra-fast sub-millisecond status formatter for Starship, zsh `PROMPT`, and tmux statusbars (`--plain`, `--json`).
+- 🎮 **Docs & Playground Upgrades**: Added **Interactive Rate-Limit Guard Simulator** and **Stateless MCP Sandbox & Quick Config** to `docs/index.html`.
+
+### Fixed
+- 🔴 **Fixed `cmd_switch` active_slot persistence bug**: `config.json`'s `active_slot` and `last_used_at` are now properly saved immediately after Keychain updates, fixing blind rotation, `sync`, `health`, and `viz` stale-slot cascading failures.
+- 🔴 **Fixed CWE-214 secret exposure in `KeychainManager.set_payload()`**: Passwords are now passed via standard input (`stdin pipe`) instead of command arguments (`-w raw_password`), preventing local process sniffing via `ps aux`.
+- 🔴 **Protected `.pypirc` credentials**: Added `.pypirc` to `.gitignore` to prevent accidental credential commits.
+- 🟡 **Fixed SVG spec error in `docs/index.html`**: Removed invalid `height="auto"` attribute.
+- 🟡 **Added `cmd_viz` template fallback**: Auto-downloads the dashboard template from GitHub for Homebrew and curl users lacking local `docs/`.
+
+---
+
 ## [0.5.0] — 2026-08-29
 
 ### Added

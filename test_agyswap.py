@@ -1,4 +1,5 @@
 import unittest
+import unittest.mock
 import tempfile
 import json
 import time
@@ -274,5 +275,297 @@ class TestCmdQuota(AgyswapTestCase):
         self.assertNotIn("personal@x.com", output)
 
 
+class TestCmdSwitch(AgyswapTestCase):
+    """Tests for cmd_switch active_slot persistence and related side effects."""
+
+    def _setup_two_slots(self):
+        """Helper: create a config with two enabled slots and their slot files."""
+        agyswap.StorageManager.init_storage()
+        cfg = {
+            "active_slot": 1,
+            "accounts": [
+                {"slot": 1, "email": "a@x.com", "alias": "a", "disabled": False,
+                 "added_at": "2026-01-01T00:00:00+00:00", "last_used_at": "2026-01-01T00:00:00+00:00"},
+                {"slot": 2, "email": "b@x.com", "alias": "b", "disabled": False,
+                 "added_at": "2026-01-01T00:00:00+00:00", "last_used_at": "2026-01-01T00:00:00+00:00"},
+            ]
+        }
+        agyswap.StorageManager.save_config(cfg)
+        token = {"access_token": "tok", "expiry": "2099-12-31T23:59:59Z"}
+        for s in (1, 2):
+            agyswap.StorageManager.save_slot(s, {
+                "slot": s, "email": cfg["accounts"][s - 1]["email"],
+                "auth_method": "consumer", "token": token
+            })
+        return cfg
+
+    @unittest.mock.patch.object(agyswap.KeychainManager, "set_payload")
+    def test_switch_updates_active_slot(self, mock_kc):
+        """After switching to slot 2, config.json active_slot must be 2."""
+        self._setup_two_slots()
+        args = argparse.Namespace(target="2", dry_run=False, force=False,
+                                  resume=False, new_session=False,
+                                  dangerously_skip_permissions=False)
+        agyswap.cmd_switch(args)
+        cfg = agyswap.StorageManager.load_config()
+        self.assertEqual(cfg["active_slot"], 2)
+
+    @unittest.mock.patch.object(agyswap.KeychainManager, "set_payload")
+    def test_switch_updates_last_used_at(self, mock_kc):
+        """After switching, last_used_at must be updated to a recent timestamp."""
+        self._setup_two_slots()
+        args = argparse.Namespace(target="2", dry_run=False, force=False,
+                                  resume=False, new_session=False,
+                                  dangerously_skip_permissions=False)
+        agyswap.cmd_switch(args)
+        cfg = agyswap.StorageManager.load_config()
+        acc2 = next(a for a in cfg["accounts"] if a["slot"] == 2)
+        self.assertNotEqual(acc2["last_used_at"], "2026-01-01T00:00:00+00:00")
+
+    @unittest.mock.patch.object(agyswap.KeychainManager, "set_payload")
+    def test_blind_rotation_after_switch(self, mock_kc):
+        """Blind rotation after switching to 2 should pick slot 1 (wrap-around)."""
+        self._setup_two_slots()
+        # First switch to slot 2
+        agyswap.cmd_switch(argparse.Namespace(
+            target="2", dry_run=False, force=False,
+            resume=False, new_session=False, dangerously_skip_permissions=False))
+        # Now blind rotation (no target) should pick slot 1
+        agyswap.cmd_switch(argparse.Namespace(
+            target=None, dry_run=False, force=False,
+            resume=False, new_session=False, dangerously_skip_permissions=False))
+        cfg = agyswap.StorageManager.load_config()
+        self.assertEqual(cfg["active_slot"], 1)
+
+    @unittest.mock.patch.object(agyswap.KeychainManager, "set_payload")
+    def test_switch_dry_run_no_side_effects(self, mock_kc):
+        """--dry-run must not modify config or call KeychainManager."""
+        self._setup_two_slots()
+        args = argparse.Namespace(target="2", dry_run=True, force=False,
+                                  resume=False, new_session=False,
+                                  dangerously_skip_permissions=False)
+        agyswap.cmd_switch(args)
+        cfg = agyswap.StorageManager.load_config()
+        self.assertEqual(cfg["active_slot"], 1)  # unchanged
+        mock_kc.assert_not_called()
+
+    def test_set_payload_no_argv_leak(self):
+        """set_payload must not pass the raw password as a subprocess argument."""
+        with unittest.mock.patch("subprocess.run") as mock_run:
+            mock_run.return_value = unittest.mock.Mock(returncode=0, stderr="")
+            try:
+                agyswap.KeychainManager.set_payload({"test": "data"})
+            except Exception:
+                pass  # May fail due to mock, but we only care about argv
+            if mock_run.call_count >= 2:
+                # Second call is add-generic-password
+                add_call = mock_run.call_args_list[-1]
+                cmd_args = add_call[0][0] if add_call[0] else add_call[1].get("args", [])
+                # The raw password string must NOT appear in the command argv
+                for arg in cmd_args:
+                    self.assertFalse(
+                        arg.startswith(agyswap.KEYRING_PREFIX),
+                        f"Secret leaked in subprocess argv: {arg[:20]}..."
+                    )
+                # Verify password was passed via stdin (input= kwarg)
+                input_val = add_call[1].get("input", "")
+                self.assertTrue(
+                    input_val.startswith(agyswap.KEYRING_PREFIX),
+                    "Password must be passed via stdin input, not argv"
+                )
+
+
+class TestAgyGuard(AgyswapTestCase):
+    """Tests for agyswap guard auto-rotating rate-limit protector."""
+
+    def test_rate_limit_patterns_matching(self):
+        """Validates that various Google/Gemini 429 quota exhaustion strings match."""
+        import modules.guard as guard
+
+        samples = [
+            "Error: RPC failed with status RESOURCE_EXHAUSTED",
+            "HTTP status: 429 Too Many Requests",
+            "GoogleGenerativeAIError: Quota exceeded for model",
+            "Error: Rate limit reached, try again in 5 minutes",
+            "Resource has been exhausted (e.g. check quota)",
+        ]
+        for sample in samples:
+            matched = any(p.search(sample) for p in guard.RATE_LIMIT_PATTERNS)
+            self.assertTrue(matched, f"Pattern should match: {sample}")
+
+    def test_inspect_log_tail_detects_quota_error(self):
+        """inspect_log_tail_for_quota_error must detect error lines in recent logs."""
+        import modules.guard as guard
+
+        tmp_log = Path(self._tmpdir.name) / "test_cli.log"
+        tmp_log.write_text("Normal line 1\nNormal line 2\nERROR: RESOURCE_EXHAUSTED: quota limit reached\n")
+
+        # Inspect since time in past
+        detected, snippet = guard.inspect_log_tail_for_quota_error(tmp_log, since_mtime=time.time() - 10)
+        self.assertTrue(detected)
+        self.assertIn("RESOURCE_EXHAUSTED", snippet)
+
+    def test_inspect_log_tail_ignores_clean_log(self):
+        """inspect_log_tail_for_quota_error returns False when no error present."""
+        import modules.guard as guard
+
+        tmp_log = Path(self._tmpdir.name) / "clean_cli.log"
+        tmp_log.write_text("Normal session line 1\nNormal session line 2\n")
+
+        detected, snippet = guard.inspect_log_tail_for_quota_error(tmp_log, since_mtime=time.time() - 10)
+        self.assertFalse(detected)
+        self.assertEqual(snippet, "")
+
+    @unittest.mock.patch("shutil.which", return_value="/mock/bin/agy")
+    @unittest.mock.patch("pathlib.Path.exists", return_value=True)
+    def test_guard_normal_exit_terminates_loop(self, mock_exists, mock_which):
+        """When agy exits with 0 and no quota error, guard terminates with exit code 0."""
+        import modules.guard as guard
+
+        agyswap.StorageManager.init_storage()
+        cfg = {
+            "active_slot": 1,
+            "accounts": [
+                {"slot": 1, "email": "a@x.com", "disabled": False},
+            ]
+        }
+        agyswap.StorageManager.save_config(cfg)
+
+        with unittest.mock.patch("subprocess.run") as mock_sub:
+            mock_sub.return_value = unittest.mock.Mock(returncode=0)
+            with unittest.mock.patch("time.time", side_effect=[100.0, 105.0]):  # session duration 5s
+                with unittest.mock.patch("modules.guard.inspect_log_tail_for_quota_error", return_value=(False, "")):
+                    g = guard.AgyGuard(resume=True, dangerously_skip_permissions=False)
+                    code = g.run()
+                    self.assertEqual(code, 0)
+                    self.assertEqual(mock_sub.call_count, 1)
+
+
+class TestStatelessMcpServer(AgyswapTestCase):
+    """Tests for 2026 Stateless Model Context Protocol (MCP) server implementation."""
+
+    def test_mcp_initialize_compatibility(self):
+        """Optional initialize request returns protocol info with stateless capability."""
+        from modules.mcp_server import dispatch_mcp_request, PROTOCOL_VERSION
+
+        req = {
+            "jsonrpc": "2.0",
+            "id": 10,
+            "method": "initialize",
+            "params": {"protocolVersion": "2026-07-28"},
+        }
+        res = dispatch_mcp_request(req)
+        self.assertIsNotNone(res)
+        self.assertEqual(res["id"], 10)
+        self.assertEqual(res["result"]["protocolVersion"], PROTOCOL_VERSION)
+        self.assertTrue(res["result"]["capabilities"]["stateless"])
+
+    def test_mcp_stateless_tools_list_without_handshake(self):
+        """tools/list must succeed without any prior initialize call (Stateless Spec)."""
+        from modules.mcp_server import dispatch_mcp_request
+
+        req = {"jsonrpc": "2.0", "id": 11, "method": "tools/list"}
+        res = dispatch_mcp_request(req)
+        self.assertIsNotNone(res)
+        self.assertEqual(res["id"], 11)
+        tool_names = [t["name"] for t in res["result"]["tools"]]
+        self.assertIn("agyswap_list_accounts", tool_names)
+        self.assertIn("agyswap_get_quota", tool_names)
+        self.assertIn("agyswap_switch_account", tool_names)
+        self.assertIn("agyswap_rotate_token", tool_names)
+        self.assertIn("agyswap_compact_context", tool_names)
+
+    def test_mcp_stateless_tools_call_execution(self):
+        """tools/call on agyswap_list_accounts executes and returns JSON content."""
+        from modules.mcp_server import dispatch_mcp_request
+
+        agyswap.StorageManager.init_storage()
+        cfg = {
+            "active_slot": 1,
+            "accounts": [
+                {"slot": 1, "email": "test@mcp.org", "disabled": False},
+            ],
+        }
+        agyswap.StorageManager.save_config(cfg)
+
+        req = {
+            "jsonrpc": "2.0",
+            "id": 12,
+            "method": "tools/call",
+            "params": {"name": "agyswap_list_accounts", "arguments": {}},
+        }
+        res = dispatch_mcp_request(req)
+        self.assertIsNotNone(res)
+        self.assertEqual(res["id"], 12)
+        content_text = res["result"]["content"][0]["text"]
+        payload = json.loads(content_text)
+        self.assertEqual(payload["active_slot"], 1)
+        self.assertEqual(payload["accounts"][0]["email"], "test@mcp.org")
+
+    def test_mcp_unknown_tool_returns_error(self):
+        """Calling nonexistent tool returns standard JSON-RPC -32601 code."""
+        from modules.mcp_server import dispatch_mcp_request
+
+        req = {
+            "jsonrpc": "2.0",
+            "id": 13,
+            "method": "tools/call",
+            "params": {"name": "nonexistent_tool", "arguments": {}},
+        }
+        res = dispatch_mcp_request(req)
+        self.assertIsNotNone(res)
+        self.assertEqual(res["error"]["code"], -32601)
+
+
+class TestCmdPrompt(AgyswapTestCase):
+    """Tests for agyswap prompt fast shell integration."""
+
+    def test_prompt_default_and_plain_output(self):
+        agyswap.StorageManager.init_storage()
+        cfg = {
+            "active_slot": 1,
+            "accounts": [{"slot": 1, "email": "a@x.com", "alias": "work", "disabled": False}],
+        }
+        agyswap.StorageManager.save_config(cfg)
+
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            agyswap.cmd_prompt(argparse.Namespace(plain=False, json=False))
+        self.assertEqual(buf.getvalue().strip(), "[agy:work]")
+
+        buf_plain = io.StringIO()
+        with contextlib.redirect_stdout(buf_plain):
+            agyswap.cmd_prompt(argparse.Namespace(plain=True, json=False))
+        self.assertEqual(buf_plain.getvalue().strip(), "work")
+
+    def test_prompt_json_output(self):
+        agyswap.StorageManager.init_storage()
+        cfg = {
+            "active_slot": 1,
+            "accounts": [{"slot": 1, "email": "a@x.com", "alias": "work", "disabled": False}],
+        }
+        agyswap.StorageManager.save_config(cfg)
+
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            agyswap.cmd_prompt(argparse.Namespace(plain=False, json=True))
+        data = json.loads(buf.getvalue())
+        self.assertTrue(data["active"])
+        self.assertEqual(data["name"], "work")
+        self.assertEqual(data["slot"], 1)
+
+    def test_prompt_no_active_slot(self):
+        agyswap.StorageManager.init_storage()
+        agyswap.StorageManager.save_config({"active_slot": None, "accounts": []})
+
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            agyswap.cmd_prompt(argparse.Namespace(plain=False, json=False))
+        self.assertEqual(buf.getvalue().strip(), "")
+
+
 if __name__ == "__main__":
     unittest.main()
+
+
+

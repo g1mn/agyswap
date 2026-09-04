@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "agyswap"
-version = "0.5.0"
+version = "0.6.0"
 description = "Antigravity (agy) CLI Multi-Account Switcher & Session Manager"
 readme = "README.md"
 authors = [
@@ -12,7 +12,7 @@ authors = [
 ]
 license = { text = "MIT" }
 requires-python = ">=3.9"
-keywords = ["antigravity", "agy", "google-antigravity", "account-switcher", "cli", "gemini"]
+keywords = ["antigravity", "agy", "google-antigravity", "account-switcher", "cli", "gemini", "mcp", "rate-limit"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Environment :: Console",
@@ -31,14 +31,12 @@ dependencies = [
 [project.scripts]
 agyswap = "agyswap:main"
 
-[project.optional-dependencies]
-context = [
-    "tree-sitter>=0.21.0",
-    "tree-sitter-languages>=1.10.0",
-]
-
 [project.urls]
+Homepage = "https://g1mn.github.io/agyswap/"
+Documentation = "https://g1mn.github.io/agyswap/"
 Repository = "https://github.com/g1mn/agyswap"
+Issues = "https://github.com/g1mn/agyswap/issues"
+Changelog = "https://github.com/g1mn/agyswap/blob/main/CHANGELOG.md"
 
 [tool.hatch.build.targets.wheel]
 include = [

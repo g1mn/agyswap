@@ -76,7 +76,7 @@ if sys.platform != "darwin":
     sys.exit(1)
 
 # ── Version ──────────────────────────────────────────────────────────────────
-VERSION = "0.5.0"
+VERSION = "0.6.0"
 
 # ── Constants & Paths ────────────────────────────────────────────────────────
 BASE_DIR = Path.home() / ".agyswap"
@@ -252,11 +252,12 @@ class KeychainManager:
         # Create fresh generic-password with -A (allow any app) and trusted binaries
         agy_bin = shutil.which("agy") or "/opt/homebrew/bin/agy"
         python_bin = sys.executable or "/opt/homebrew/bin/python3"
+        # Build command without password in argv (CWE-214 mitigation)
         cmd = [
             "security", "add-generic-password",
             "-a", KEYCHAIN_ACCOUNT,
             "-s", KEYCHAIN_SERVICE,
-            "-w", raw_password,
+            "-w",
             "-U",
             "-A",
             "-T", "/usr/bin/security"
@@ -266,7 +267,11 @@ class KeychainManager:
         if Path(python_bin).exists():
             cmd.extend(["-T", python_bin])
 
-        res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        # Pass secret via stdin pipe — never appears in ps aux / /proc/*/cmdline
+        res = subprocess.run(
+            cmd, input=raw_password + "\n",
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
+        )
         if res.returncode != 0:
             raise RuntimeError(f"Keychain update failed: {res.stderr.strip()}")
 
@@ -892,7 +897,24 @@ def cmd_switch(args):
         print(red(f"✗ Failed to update Keychain: {e}"))
         sys.exit(1)
 
+    # ── Persist active slot and last-used timestamp ──
+    cfg["active_slot"] = slot_num
+    selected["last_used_at"] = datetime.now(timezone.utc).isoformat()
+    StorageManager.save_config(cfg)
+
     print(green(f"✓ Switched Antigravity (agy) profile to #{slot_num} ({email})."))
+
+    if getattr(args, "ctx", False):
+        print(cyan("🧠 Compacting repository context before launching agy (--ctx)..."))
+        try:
+            cmd_context(argparse.Namespace(
+                ctx_action="clean",
+                dir=".",
+                budget=2000,
+                goal=f"Switched to slot #{slot_num} ({email})",
+            ))
+        except Exception as ce:
+            print(yellow(f"  (Context compaction skipped: {ce})"))
 
     skip_perms = getattr(args, "dangerously_skip_permissions", False)
     skip_flag = ["--dangerously-skip-permissions"] if skip_perms else []
@@ -1490,8 +1512,28 @@ def cmd_viz(args):
     ]
     template_path = next((p for p in candidates if p.exists()), None)
     if not template_path:
-        print(red("✗ HTML dashboard template not found."))
-        sys.exit(1)
+        # Fallback: download from GitHub for Homebrew / curl installations
+        fallback_url = "https://raw.githubusercontent.com/g1mn/agyswap/main/docs/index.html"
+        cache_dir = BASE_DIR / "cache"
+        cache_dir.mkdir(parents=True, exist_ok=True)
+        cached_html = cache_dir / "index.html"
+        if cached_html.exists():
+            template_path = cached_html
+        else:
+            print(cyan("📥 Downloading dashboard template from GitHub..."))
+            try:
+                req = urllib.request.Request(fallback_url, headers={"User-Agent": f"agyswap/{VERSION}"})
+                with urllib.request.urlopen(req, timeout=15) as resp:
+                    html_bytes = resp.read()
+                fd = os.open(str(cached_html), os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+                with os.fdopen(fd, "w", encoding="utf-8") as f:
+                    f.write(html_bytes.decode("utf-8"))
+                template_path = cached_html
+                print(green(f"✓ Dashboard template cached at {cached_html}"))
+            except Exception as e:
+                print(red(f"✗ HTML dashboard template not found locally, and download failed: {e}"))
+                print(gray("  Tip: Clone the repo or run from the source directory."))
+                sys.exit(1)
 
     with open(template_path, "r", encoding="utf-8") as f:
         html = f.read()
@@ -1932,6 +1974,95 @@ def cmd_context(args):
             else:
                 print(ContextBenchmarker.render_cli_report(stats))
 
+def cmd_guard(args):
+    """Launches agy CLI under auto-rotating rate-limit protection."""
+    try:
+        from modules.guard import AgyGuard
+    except ImportError as e:
+        print(red(f"✗ Failed to load guard module: {e}"))
+        sys.exit(1)
+
+    target = getattr(args, "target", None)
+    resume = getattr(args, "resume", True)
+    skip_perms = getattr(args, "dangerously_skip_permissions", False)
+    auto_ctx = getattr(args, "ctx", False)
+    max_switches = getattr(args, "max_switches", 10)
+
+    guard = AgyGuard(
+        resume=resume,
+        dangerously_skip_permissions=skip_perms,
+        auto_ctx=auto_ctx,
+        max_switches=max_switches,
+    )
+    code = guard.run(initial_target=target)
+    sys.exit(code)
+
+def cmd_mcp(args):
+    """Runs the 2026 Stateless Model Context Protocol (MCP) server."""
+    try:
+        from modules.mcp_server import StatelessMCPServer, run_http_server
+    except ImportError as e:
+        print(red(f"✗ Failed to load MCP server module: {e}"))
+        sys.exit(1)
+
+    use_http = getattr(args, "http", False)
+    host = getattr(args, "host", "127.0.0.1")
+    port = getattr(args, "port", 8765)
+
+    if use_http:
+        run_http_server(host=host, port=port)
+    else:
+        server = StatelessMCPServer()
+        server.run_stdio()
+
+def cmd_prompt(args):
+    """Outputs ultra-fast, lightweight status string for shell prompts (Starship, zsh, tmux)."""
+    cfg = StorageManager.load_config()
+    active_slot = cfg.get("active_slot")
+    if not active_slot:
+        if getattr(args, "json", False):
+            print(json.dumps({"active": False}))
+        return
+
+    acc = next((a for a in cfg.get("accounts", []) if a.get("slot") == active_slot), None)
+    if not acc:
+        if getattr(args, "json", False):
+            print(json.dumps({"active": False}))
+        return
+
+    name = acc.get("alias") or f"#{active_slot}"
+    email = acc.get("email", "")
+
+    # Check cached quota without making network calls for sub-millisecond execution
+    min_pct = None
+    try:
+        from modules.quota import get_cached_quota
+        qdata = get_cached_quota(email)
+        if qdata and "models" in qdata:
+            models = qdata["models"]
+            pcts = [m.get("remaining_pct") for m in models.values() if isinstance(m, dict) and "remaining_pct" in m]
+            if pcts:
+                min_pct = min(pcts)
+    except Exception:
+        min_pct = None
+
+    if getattr(args, "json", False):
+        res = {
+            "active": True,
+            "slot": active_slot,
+            "name": name,
+            "email": email,
+            "remaining_pct": min_pct,
+        }
+        print(json.dumps(res))
+        return
+
+    pct_str = f" {int(min_pct)}%" if min_pct is not None else ""
+    if getattr(args, "plain", False):
+        print(f"{name}{pct_str}")
+    else:
+        print(f"[agy:{name}{pct_str}]")
+
 # ── Main Entrypoint ─────────────────────────────────────────────────────────
 def main():
     migrate_legacy_data_dir()
@@ -1944,17 +2075,19 @@ def main():
         cmd_list(argparse.Namespace(json=False))
         return
 
-    if len(sys.argv) in (2, 3, 4, 5) and not sys.argv[1].startswith("-"):
-        subcmds = ["list", "ls", "status", "st", "add", "switch", "sw", "remove", "rm", "rename", "alias", "enable", "disable", "whoami", "sync", "rotate", "health", "audit", "export", "import", "viz", "quota", "tui", "watch", "completion", "context", "ctx"]
+    if len(sys.argv) in (2, 3, 4, 5, 6) and not sys.argv[1].startswith("-"):
+        subcmds = ["list", "ls", "status", "st", "add", "switch", "sw", "remove", "rm", "rename", "alias", "enable", "disable", "whoami", "sync", "rotate", "health", "audit", "export", "import", "viz", "quota", "tui", "watch", "completion", "context", "ctx", "guard", "mcp", "prompt"]
         if sys.argv[1] not in subcmds:
             resume = ("-r" in sys.argv[2:] or "--resume" in sys.argv[2:])
             new_s = ("-n" in sys.argv[2:] or "--new" in sys.argv[2:])
             force = ("--force" in sys.argv[2:] or "-f" in sys.argv[2:])
             skip_perms = ("-y" in sys.argv[2:] or "--dangerously-skip-permissions" in sys.argv[2:])
+            ctx_opt = ("--ctx" in sys.argv[2:] or "-c" in sys.argv[2:])
             cmd_switch(argparse.Namespace(
                 target=sys.argv[1], dry_run=False, force=force,
                 resume=resume, new_session=new_s,
-                dangerously_skip_permissions=skip_perms
+                dangerously_skip_permissions=skip_perms,
+                ctx=ctx_opt
             ))
             return
 
@@ -1995,8 +2128,16 @@ def main():
     p_switch.add_argument("-r", "--resume", action="store_true", help="Auto-resume previous session with switched account via 'agy -c'")
     p_switch.add_argument("-n", "--new", action="store_true", dest="new_session", help="Auto-launch fresh session with switched account via 'agy'")
     p_switch.add_argument("-y", "--dangerously-skip-permissions", action="store_true", dest="dangerously_skip_permissions", help="Pass --dangerously-skip-permissions to agy (requires -r or -n)")
+    p_switch.add_argument("--ctx", "-c", action="store_true", help="Auto-compact repository context via ctx clean before launching agy")
     p_switch.add_argument("--force", action="store_true", help="Force switch even if token is expired")
     p_switch.add_argument("--dry-run", action="store_true", dest="dry_run", help="Preview without making changes")
+
+    p_guard = subparsers.add_parser("guard", help="Launch agy under auto-rotating rate-limit protection")
+    p_guard.add_argument("target", nargs="?", default=None, help="Optional initial slot, email, or alias")
+    p_guard.add_argument("-r", "--resume", action="store_true", default=True, help="Auto-resume session via 'agy -c' (default: True)")
+    p_guard.add_argument("-y", "--dangerously-skip-permissions", action="store_true", dest="dangerously_skip_permissions", help="Pass --dangerously-skip-permissions to agy")
+    p_guard.add_argument("--ctx", "-c", action="store_true", help="Auto-compact repository context via ctx clean before each rotation")
+    p_guard.add_argument("--max-switches", type=_positive_int, default=10, help="Maximum automatic account switches (default: 10)")
 
     p_remove = subparsers.add_parser("remove", aliases=["rm"], help="Remove an account slot")
     p_remove.add_argument("target", help="Slot number, email, or alias")
@@ -2081,6 +2222,15 @@ def main():
     p_ctx_bench.add_argument("--json", action="store_true", help="Output benchmark metrics in JSON format")
     p_ctx_bench.add_argument("-md", "--markdown", action="store_true", help="Output benchmark metrics in Markdown table format")
 
+    p_mcp = subparsers.add_parser("mcp", help="Run 2026 Stateless Model Context Protocol (MCP) server")
+    p_mcp.add_argument("--http", action="store_true", help="Run in lightweight Stateless HTTP mode instead of stdio")
+    p_mcp.add_argument("--host", default="127.0.0.1", help="HTTP host (default: 127.0.0.1)")
+    p_mcp.add_argument("--port", type=_positive_int, default=8765, help="HTTP port (default: 8765)")
+
+    p_prompt = subparsers.add_parser("prompt", help="Print fast status string for shell prompts (Starship/zsh/tmux)")
+    p_prompt.add_argument("--plain", action="store_true", help="Print plain format without brackets")
+    p_prompt.add_argument("--json", action="store_true", help="Output in JSON format")
+
     args = parser.parse_args()
 
     cmds = {
@@ -2106,6 +2256,9 @@ def main():
         "watch": cmd_watch,
         "completion": cmd_completion,
         "context": cmd_context, "ctx": cmd_context,
+        "guard": cmd_guard,
+        "mcp": cmd_mcp,
+        "prompt": cmd_prompt,
     }
 
     cmd_fn = cmds.get(args.command)

@@ -35,3 +35,6 @@ ENV/
 .agy-swap/
 *.tmp
 *.tmp.*
+
+# Credentials (never commit)
+.pypirc
