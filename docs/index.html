@@ -143,12 +143,9 @@
   }
   @media(max-width: 980px) { .cols { grid-template-columns: 1fr; } }
 
-  .rail { position: sticky; top: 20px; display: flex; flex-direction: column; gap: 16px; }
-  /* Single-column mobile layout stacks aside above main as separate grid rows, but a tall
-     sticky rail still pins itself over main's content while main scrolls underneath it
-     (its containing block release point lags far behind the visible viewport) — so drop
-     sticky entirely below the breakpoint where the two-column layout no longer applies. */
-  @media(max-width: 980px) { .rail { position: static; } }
+  .rail { display: flex; flex-direction: column; gap: 16px; }
+  .panel-sticky { position: sticky; top: 20px; }
+  @media(max-width: 980px) { .panel-sticky { position: static; } }
   .panel {
     background: var(--surface);
     border: 1px solid var(--line);
@@ -518,6 +515,18 @@
     <!-- Sidebar Controls -->
     <aside class="rail">
       <div class="panel">
+        <h3>Interactive Presets</h3>
+        <div class="preset-buttons" id="presets">
+          <button class="preset-btn active" data-preset="all">🌐 Full System Architecture</button>
+          <button class="preset-btn" data-preset="keychain">🔐 Keychain I/O &amp; C API</button>
+          <button class="preset-btn" data-preset="switch">⚡ Account Switch Sequence</button>
+          <button class="preset-btn" data-preset="tui">🖥️ Live TUI Dashboard Path</button>
+          <button class="preset-btn" data-preset="mcp">🤖 Stateless MCP Agent Path</button>
+          <button class="preset-btn" data-preset="userinfo">👤 Google UserInfo Flow</button>
+        </div>
+      </div>
+
+      <div class="panel panel-sticky">
         <h3>Quick Navigation</h3>
         <nav class="nav-jump">
           <a href="#sec-topology"><span class="nav-letter">A</span>Architecture Topology</a>
@@ -533,18 +542,6 @@
           <a href="#sec-install"><span class="nav-letter">K</span>Installation &amp; Setup</a>
           <a href="#sec-faq"><span class="nav-letter">L</span>Troubleshooting FAQ</a>
         </nav>
-      </div>
-
-      <div class="panel">
-        <h3>Interactive Presets</h3>
-        <div class="preset-buttons" id="presets">
-          <button class="preset-btn active" data-preset="all">🌐 Full System Architecture</button>
-          <button class="preset-btn" data-preset="keychain">🔐 Keychain I/O &amp; C API</button>
-          <button class="preset-btn" data-preset="switch">⚡ Account Switch Sequence</button>
-          <button class="preset-btn" data-preset="tui">🖥️ Live TUI Dashboard Path</button>
-          <button class="preset-btn" data-preset="mcp">🤖 Stateless MCP Agent Path</button>
-          <button class="preset-btn" data-preset="userinfo">👤 Google UserInfo Flow</button>
-        </div>
       </div>
 
       <div class="panel">
