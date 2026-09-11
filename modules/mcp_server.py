@@ -12,13 +12,14 @@ from __future__ import annotations
 import sys
 import json
 import traceback
+from contextlib import redirect_stdout
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 
 PROTOCOL_VERSION = "2026-07-28"
 SERVER_NAME = "agyswap-stateless-mcp"
-SERVER_VERSION = "0.6.0"
+SERVER_VERSION = "0.6.1"
 
 # Standard MCP Tool Definitions
 TOOLS_SCHEMA = [
@@ -369,7 +370,9 @@ def dispatch_mcp_request(req: Dict[str, Any]) -> Optional[Dict[str, Any]]:
             }
 
         try:
-            content_text = fn(arguments)
+            # CLI helpers print progress; stdout belongs exclusively to JSON-RPC.
+            with redirect_stdout(sys.stderr):
+                content_text = fn(arguments)
             return {
                 "jsonrpc": "2.0",
                 "id": req_id,

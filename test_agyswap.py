@@ -22,7 +22,7 @@ class AgyswapTestCase(unittest.TestCase):
 
         self._orig = {name: getattr(agyswap, name) for name in
                       ("BASE_DIR", "CONFIG_FILE", "SLOTS_DIR", "BACKUP_DIR", "LOCK_FILE", "LEGACY_BASE_DIR")}
-        self._orig_quota = {name: getattr(quota, name) for name in ("BASE_DIR", "QUOTA_CACHE_FILE")}
+        self._orig_quota = {name: getattr(quota, name) for name in ("BASE_DIR", "QUOTA_CACHE_FILE", "QUOTA_LOCK_FILE")}
 
         agyswap.BASE_DIR = tmp_home / "agyswap-new"
         agyswap.CONFIG_FILE = agyswap.BASE_DIR / "config.json"
@@ -33,6 +33,10 @@ class AgyswapTestCase(unittest.TestCase):
 
         quota.BASE_DIR = agyswap.BASE_DIR
         quota.QUOTA_CACHE_FILE = agyswap.BASE_DIR / "quota_cache.json"
+        quota.QUOTA_LOCK_FILE = agyswap.BASE_DIR / ".quota.lock"
+        self._instances_patch = unittest.mock.patch("agyswap.get_running_instances", return_value=[])
+        self._instances_patch.start()
+        self.addCleanup(self._instances_patch.stop)
 
     def tearDown(self):
         for name, value in self._orig.items():
@@ -378,6 +382,39 @@ class TestCmdSwitch(AgyswapTestCase):
 class TestAgyGuard(AgyswapTestCase):
     """Tests for agyswap guard auto-rotating rate-limit protector."""
 
+    def test_log_cursor_ignores_history_and_detects_new_errors(self):
+        import modules.guard as guard
+
+        log = Path(self._tmpdir.name) / "cli.log"
+        log.write_text("RESOURCE_EXHAUSTED from old session\n")
+        position = guard.capture_log_position(log)
+        started = time.time()
+        self.assertFalse(guard.inspect_log_tail_for_quota_error(log, started, start_position=position)[0])
+        with log.open("a") as stream:
+            stream.write("Normal new session\n")
+        self.assertFalse(guard.inspect_log_tail_for_quota_error(log, started, start_position=position)[0])
+        with log.open("a") as stream:
+            stream.write("New error: status: 429\n")
+        detected, snippet = guard.inspect_log_tail_for_quota_error(log, started, start_position=position)
+        self.assertTrue(detected)
+        self.assertEqual(snippet, "New error: status: 429")
+
+    def test_log_cursor_handles_rotation_and_truncation(self):
+        import modules.guard as guard
+
+        for change in ("rotate", "truncate", "rewrite_longer"):
+            with self.subTest(change=change):
+                log = Path(self._tmpdir.name) / "cli.log"
+                log.write_text("Old clean session\n" * 10)
+                position = guard.capture_log_position(log)
+                if change == "rotate":
+                    log.rename(log.with_suffix(".old"))
+                new_content = "RESOURCE_EXHAUSTED\n"
+                if change == "rewrite_longer":
+                    new_content += "New clean line\n" * 20
+                log.write_text(new_content)
+                self.assertTrue(guard.inspect_log_tail_for_quota_error(log, time.time(), start_position=position)[0])
+
     def test_rate_limit_patterns_matching(self):
         """Validates that various Google/Gemini 429 quota exhaustion strings match."""
         import modules.guard as guard
@@ -418,7 +455,8 @@ class TestAgyGuard(AgyswapTestCase):
 
     @unittest.mock.patch("shutil.which", return_value="/mock/bin/agy")
     @unittest.mock.patch("pathlib.Path.exists", return_value=True)
-    def test_guard_normal_exit_terminates_loop(self, mock_exists, mock_which):
+    @unittest.mock.patch("modules.guard.get_latest_log_file", return_value=None)
+    def test_guard_normal_exit_terminates_loop(self, mock_log, mock_exists, mock_which):
         """When agy exits with 0 and no quota error, guard terminates with exit code 0."""
         import modules.guard as guard
 
@@ -443,6 +481,28 @@ class TestAgyGuard(AgyswapTestCase):
 
 class TestStatelessMcpServer(AgyswapTestCase):
     """Tests for 2026 Stateless Model Context Protocol (MCP) server implementation."""
+
+    def test_stdio_compaction_keeps_progress_out_of_json_response(self):
+        from modules.mcp_server import StatelessMCPServer
+
+        original = agyswap.cmd_context
+
+        def compact_in_tempdir(args):
+            args.dir = self._tmpdir.name
+            original(args)
+
+        request = {"jsonrpc": "2.0", "id": 42, "method": "tools/call",
+                   "params": {"name": "agyswap_compact_context", "arguments": {}}}
+        stdout, stderr = io.StringIO(), io.StringIO()
+        with unittest.mock.patch("agyswap.cmd_context", side_effect=compact_in_tempdir), \
+             unittest.mock.patch("sys.stdin", io.StringIO(json.dumps(request) + "\n")), \
+             contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
+            StatelessMCPServer().run_stdio()
+        response = json.loads(stdout.getvalue())
+        self.assertEqual(response["id"], 42)
+        self.assertEqual(json.loads(response["result"]["content"][0]["text"])["status"], "success")
+        self.assertIn("Context sanitized", stderr.getvalue())
+        self.assertTrue((Path(self._tmpdir.name) / ".agents/memory/REPO_MAP.md").exists())
 
     def test_mcp_initialize_compatibility(self):
         """Optional initialize request returns protocol info with stateless capability."""
@@ -566,6 +626,4 @@ class TestCmdPrompt(AgyswapTestCase):
 
 if __name__ == "__main__":
     unittest.main()
-
-
 

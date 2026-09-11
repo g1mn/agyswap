@@ -37,7 +37,7 @@
   <rect width="960" height="480" class="bg" rx="10"/>
 
   <!-- Top Header Title -->
-  <text x="32" y="38" fill="#58a6ff" font-family="ui-monospace, monospace" font-size="11px" font-weight="700" letter-spacing="0.1em">SYSTEM TOPOLOGY • V0.6.0</text>
+  <text x="32" y="38" fill="#58a6ff" font-family="ui-monospace, monospace" font-size="11px" font-weight="700" letter-spacing="0.1em">SYSTEM TOPOLOGY • V0.6.1</text>
   <text x="32" y="58" fill="#f0f6fc" font-family="-apple-system, sans-serif" font-size="16px" font-weight="700">agyswap Architecture &amp; Data Flow Topology</text>
   <text x="32" y="78" fill="#8b949e" font-family="-apple-system, sans-serif" font-size="12px">Native C API Keychain Binding • 429 Auto-Guard • 2026 Stateless MCP • 96% AST Context Engine</text>
 
@@ -68,7 +68,7 @@
     <rect width="320" height="296" class="card-accent"/>
     <path d="M 0 10 Q 0 0 10 0 L 310 0 Q 320 0 320 10 L 320 34 L 0 34 Z" class="header-tint"/>
     <line x1="0" y1="34" x2="320" y2="34" stroke="#30363d" stroke-width="1"/>
-    <text x="16" y="23" class="title-accent">🔄 agyswap Engine Core (v0.6.0)</text>
+    <text x="16" y="23" class="title-accent">🔄 agyswap Engine Core (v0.6.1)</text>
     
     <text x="16" y="60" class="text-green">⚡ Native C API Binding</text>
     <text x="30" y="78" class="text">SecKeychain APIs (0% argv leak)</text>

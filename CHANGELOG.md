@@ -5,6 +5,19 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ---
 
+## [0.6.1] — 2026-09-11
+
+### Fixed
+- Keep MCP tool progress messages on stderr so stdio responses remain valid JSON-RPC.
+- Inspect only newly appended Guard log content; handle log rotation and truncation without replaying old quota errors.
+- Isolate quota lock files and running-session lookups in unit tests from the real user environment.
+
+### Changed
+- Run the unit test suite in CI across all configured Python versions.
+- Add regression coverage for MCP stdout and Guard log history, rotation, and truncation.
+
+---
+
 ## [0.6.0] — 2026-09-04
 
 ### Added

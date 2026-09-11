@@ -76,7 +76,7 @@ if sys.platform != "darwin":
     sys.exit(1)
 
 # ── Version ──────────────────────────────────────────────────────────────────
-VERSION = "0.6.0"
+VERSION = "0.6.1"
 
 # ── Constants & Paths ────────────────────────────────────────────────────────
 BASE_DIR = Path.home() / ".agyswap"

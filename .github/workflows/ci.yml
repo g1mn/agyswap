@@ -33,6 +33,9 @@ jobs:
         agyswap list
         agyswap audit
 
+    - name: Run Unit Tests
+      run: python3 -m unittest discover -v
+
     - name: Test Local Installer
       run: |
         ./install.sh

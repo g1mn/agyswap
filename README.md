@@ -25,6 +25,8 @@
 
 ---
 
+Latest patch: **v0.6.1** fixes MCP stdio output and Guard log handling, and adds isolated regression tests to CI. See [CHANGELOG.md](CHANGELOG.md).
+
 ## ⚡ Quick Start (30 Seconds)
 
 ```bash

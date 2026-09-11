@@ -12,6 +12,7 @@ import sys
 import time
 import shutil
 import subprocess
+from collections import deque
 from pathlib import Path
 from typing import Optional, Tuple, List, Dict, Any
 
@@ -43,20 +44,41 @@ def get_latest_log_file() -> Optional[Path]:
     return None
 
 
-def inspect_log_tail_for_quota_error(log_path: Optional[Path], since_mtime: float, max_lines: int = 150) -> Tuple[bool, str]:
-    """Inspects recent log entries created/modified after `since_mtime` for quota errors."""
+def capture_log_position(log_path: Optional[Path]):
+    """Record file identity, byte offset and a small anchor before launch."""
+    if log_path is None:
+        return None
+    try:
+        with open(log_path, "rb") as stream:
+            stat = os.fstat(stream.fileno())
+            stream.seek(max(0, stat.st_size - 64))
+            return stat.st_dev, stat.st_ino, stat.st_size, stream.read(64)
+    except OSError:
+        return None
+
+
+def inspect_log_tail_for_quota_error(log_path: Optional[Path], since_mtime: float, max_lines: int = 150, start_position=None) -> Tuple[bool, str]:
+    """Inspect appended bytes, or a new/rotated log, for quota errors."""
     if not log_path or not log_path.exists():
         return False, ""
 
     try:
-        if log_path.stat().st_mtime < since_mtime - 5.0:
-            return False, ""
-
-        with open(log_path, "r", encoding="utf-8", errors="replace") as f:
-            lines = f.readlines()
-            tail_lines = lines[-max_lines:] if len(lines) > max_lines else lines
+        with open(log_path, "rb") as f:
+            stat = os.fstat(f.fileno())
+            offset = 0
+            if start_position is not None:
+                device, inode, size, anchor = start_position
+                if (stat.st_dev, stat.st_ino) == (device, inode) and stat.st_size >= size:
+                    f.seek(max(0, size - 64))
+                    if f.read(len(anchor)) == anchor:
+                        offset = size
+            elif stat.st_mtime < since_mtime:
+                return False, ""
+            f.seek(offset)
+            tail_lines = deque(f, maxlen=max_lines)
 
         for line in reversed(tail_lines):
+            line = line.decode("utf-8", errors="replace")
             for pat in RATE_LIMIT_PATTERNS:
                 if pat.search(line):
                     return True, line.strip()
@@ -134,7 +156,7 @@ class AgyGuard:
 
             session_start_time = time.time()
             log_target = get_latest_log_file()
-            log_start_mtime = log_target.stat().st_mtime if log_target and log_target.exists() else session_start_time
+            log_start_position = capture_log_position(log_target)
 
             print(agyswap.bold(agyswap.green(f"▶ Launching agy session [Slot #{active_slot} · {active_email}]...")))
             print(agyswap.gray("─" * 60))
@@ -155,7 +177,9 @@ class AgyGuard:
 
             # Inspect logs for rate limit / quota error
             current_log = get_latest_log_file()
-            is_quota_err, err_snippet = inspect_log_tail_for_quota_error(current_log, log_start_mtime)
+            is_quota_err, err_snippet = inspect_log_tail_for_quota_error(
+                current_log, session_start_time, start_position=log_start_position
+            )
 
             # Normal voluntary exit (e.g. exit_code == 0 and session lasted > 3 seconds with no quota error)
             if exit_code == 0 and not is_quota_err:
